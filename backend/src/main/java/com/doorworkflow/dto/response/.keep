@@ -1,0 +1,3 @@
+package com.doorworkflow.dto.response;
+
+// DTO package for response objects (currently empty)

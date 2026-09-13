@@ -1,0 +1,3 @@
+package com.doorworkflow.dto.request;
+
+// DTO package for request objects (currently empty)

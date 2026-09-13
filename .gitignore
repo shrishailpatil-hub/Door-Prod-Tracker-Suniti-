@@ -1,0 +1,20 @@
+﻿# Environment variables and secrets
+.env
+.env.local
+
+# Build artifacts
+target/
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+
+# OS files
+.DS_Store
+Thumbs.db
