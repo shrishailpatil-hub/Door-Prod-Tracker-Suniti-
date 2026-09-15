@@ -147,6 +147,8 @@ class _UserCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GlassCard(
+      color: Colors.white.withValues(alpha: 0.7),
+      borderColor: Colors.white.withValues(alpha: 0.8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -154,15 +156,29 @@ class _UserCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
-                  color: _roleColor(user.role).withValues(alpha: 0.12),
+                  gradient: LinearGradient(
+                    colors: [
+                      _roleColor(user.role).withValues(alpha: 0.7),
+                      _roleColor(user.role),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _roleColor(user.role).withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
                 ),
                 child: Icon(
                   _roleIcon(user.role),
-                  color: _roleColor(user.role),
+                  color: Colors.white,
                   size: 24,
                 ),
               ),
@@ -176,10 +192,11 @@ class _UserCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.5,
                           ),
                     ),
-                    const SizedBox(height: AppTheme.space4),
+                    const SizedBox(height: 2),
                     Text(
                       user.email,
                       overflow: TextOverflow.ellipsis,
@@ -187,30 +204,37 @@ class _UserCard extends StatelessWidget {
                       style: const TextStyle(
                         color: AppTheme.textSecondary,
                         fontSize: 14,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                    const SizedBox(height: AppTheme.space4),
+                    const SizedBox(height: AppTheme.space8),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         user.isActive
                             ? StatusChip.completed(label: 'Active')
                             : StatusChip.cancelled(label: 'Inactive'),
-                        const SizedBox(height: AppTheme.space4),
+                        const SizedBox(height: AppTheme.space8),
                         // Action buttons wrap
                         Wrap(
                           spacing: AppTheme.space8,
                           children: [
                             // Activate / Deactivate button
-                            // Activate / Deactivate button
                             Consumer<AdminUserProvider>(
                               builder: (context, provider, _) {
                                 return IconButton(
                                   constraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-                                  padding: EdgeInsets.zero,
+                                  padding: const EdgeInsets.all(AppTheme.space4),
+                                  style: IconButton.styleFrom(
+                                    backgroundColor: AppTheme.surfaceLight,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
+                                    ),
+                                  ),
                                   icon: Icon(
                                     user.isActive ? Icons.toggle_off : Icons.toggle_on,
                                     size: 20,
+                                    color: user.isActive ? AppTheme.statusCancelled : AppTheme.statusCompleted,
                                   ),
                                   onPressed: provider.isUpdating ? null : () {
                                       provider.updateUserStatus(
@@ -224,8 +248,14 @@ class _UserCard extends StatelessWidget {
                             // Edit button
                             IconButton(
                               constraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-                              padding: EdgeInsets.zero,
-                              icon: const Icon(Icons.edit, size: 20),
+                              padding: const EdgeInsets.all(AppTheme.space4),
+                              style: IconButton.styleFrom(
+                                backgroundColor: AppTheme.surfaceLight,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
+                                ),
+                              ),
+                              icon: const Icon(Icons.edit, size: 20, color: AppTheme.textPrimary),
                               tooltip: 'Edit user',
                               onPressed: () {
                                 Navigator.of(context).pushNamed(
@@ -244,33 +274,43 @@ class _UserCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppTheme.space12),
-          const Divider(height: 1, color: Color(0x1F000000)),
-          const SizedBox(height: AppTheme.space8),
+          Divider(height: 1, color: AppTheme.textSecondary.withValues(alpha: 0.1)),
+          const SizedBox(height: AppTheme.space12),
           Row(
             children: [
               const Text(
-                'ROLE: ',
+                'ROLE',
                 style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
                   color: AppTheme.textMuted,
-                  letterSpacing: 0.5,
+                  letterSpacing: 1.0,
                 ),
               ),
+              const SizedBox(width: AppTheme.space8),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: AppTheme.space8,
-                  vertical: 2,
+                  horizontal: AppTheme.space12,
+                  vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: _roleColor(user.role).withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
+                  gradient: LinearGradient(
+                    colors: [
+                      _roleColor(user.role).withValues(alpha: 0.15),
+                      _roleColor(user.role).withValues(alpha: 0.05),
+                    ],
+                  ),
+                  border: Border.all(
+                    color: _roleColor(user.role).withValues(alpha: 0.3),
+                    width: 1,
+                  ),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
                 ),
                 child: Text(
                   user.role.toBackendString(),
                   style: TextStyle(
                     fontSize: 12,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w800,
                     color: _roleColor(user.role),
                     letterSpacing: 0.5,
                   ),
@@ -282,6 +322,7 @@ class _UserCard extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 12,
                   color: AppTheme.textSecondary,
+                  fontStyle: FontStyle.italic,
                 ),
               ),
             ],

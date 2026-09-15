@@ -6,7 +6,7 @@ class ApiConfig {
   /// flutter run --dart-define=API_BASE_URL=http://192.168.1.100:8080/api
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost:8080/api',
+      defaultValue: 'http://13.126.144.211/api',
   );
 
   // Authentication

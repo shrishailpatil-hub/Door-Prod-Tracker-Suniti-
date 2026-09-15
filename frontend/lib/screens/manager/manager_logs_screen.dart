@@ -210,42 +210,90 @@ class _ManagerLogsScreenState extends State<ManagerLogsScreen> {
                 return Padding(
                   padding: const EdgeInsets.only(bottom: AppTheme.space12),
                   child: GlassCard(
-                    padding: const EdgeInsets.all(AppTheme.space16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            _buildActionBadge(log.action),
-                            Text(
-                              _formatTimestamp(log.createdAt),
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(color: AppTheme.textMuted),
+                    color: Colors.white.withValues(alpha: 0.7),
+                    borderColor: Colors.white.withValues(alpha: 0.8),
+                    padding: EdgeInsets.zero,
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppTheme.space16),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  AppTheme.primaryBlue.withValues(alpha: 0.15),
+                                  AppTheme.primaryBlue.withValues(alpha: 0.05),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              border: Border.all(color: AppTheme.primaryBlue.withValues(alpha: 0.1)),
+                              borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: AppTheme.space8),
-                        if (log.stepName != null &&
-                            log.stepName!.isNotEmpty) ...[
-                          Text(
-                            'Step: ${log.stepName}',
-                            style: Theme.of(context).textTheme.titleMedium,
+                            child: const Icon(Icons.history_outlined, color: AppTheme.primaryBlue),
                           ),
-                          const SizedBox(height: AppTheme.space4),
+                          const SizedBox(width: AppTheme.space12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      child: Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: _buildActionBadge(log.action),
+                                      ),
+                                    ),
+                                    const SizedBox(width: AppTheme.space8),
+                                    Text(
+                                      _formatTimestamp(log.createdAt),
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppTheme.textMuted,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: AppTheme.space8),
+                                if (log.stepName != null && log.stepName!.isNotEmpty) ...[
+                                  Text(
+                                    'Step: ${log.stepName}',
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: -0.3,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                ],
+                                Text(
+                                  'Job ID: ${log.jobId}',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppTheme.primaryBlue,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'By: ${log.performedBy}',
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppTheme.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ],
-                        Text(
-                          'Job ID: ${log.jobId}',
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(color: AppTheme.textSecondary),
-                        ),
-                        const SizedBox(height: AppTheme.space4),
-                        Text(
-                          'By: ${log.performedBy}',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: AppTheme.textMuted),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 );

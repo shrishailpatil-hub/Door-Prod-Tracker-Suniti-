@@ -39,22 +39,57 @@ class AdminDashboardScreen extends StatelessWidget {
                   child: Row(
                     children: [
                       Container(
-                        width: 48,
-                        height: 48,
+                        width: 52,
+                        height: 52,
                         decoration: BoxDecoration(
-                          color: AppTheme.primaryLight.withValues(alpha: 0.15),
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              AppTheme.primaryBlue,
+                              AppTheme.primaryDark,
+                            ],
+                          ),
                           borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.primaryBlue.withValues(alpha: 0.28),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
                         ),
-                        child: const Icon(Icons.admin_panel_settings_outlined, color: AppTheme.primaryBlue),
+                        child: const Icon(Icons.admin_panel_settings_rounded, color: Colors.white, size: 28),
                       ),
-                      const SizedBox(width: AppTheme.space12),
+                      const SizedBox(width: AppTheme.space16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(session?.name ?? 'Administrator', style: Theme.of(context).textTheme.titleLarge, overflow: TextOverflow.ellipsis),
+                            Text(
+                              session?.name ?? 'Administrator',
+                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                             const SizedBox(height: AppTheme.space4),
-                            const Text('ADMIN', style: TextStyle(color: AppTheme.primaryBlue, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryBlue.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
+                              ),
+                              child: const Text(
+                                'ADMIN',
+                                style: TextStyle(
+                                  color: AppTheme.primaryBlue,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 11,
+                                  letterSpacing: 1.0,
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -104,7 +139,12 @@ class AdminDashboardScreen extends StatelessWidget {
 }
 
 class _AdminNavigationCard extends StatelessWidget {
-  const _AdminNavigationCard({required this.title, required this.description, required this.icon, required this.routeName});
+  const _AdminNavigationCard({
+    required this.title,
+    required this.description,
+    required this.icon,
+    required this.routeName,
+  });
 
   final String title;
   final String description;
@@ -117,20 +157,61 @@ class _AdminNavigationCard extends StatelessWidget {
       onTap: () => Navigator.of(context).pushNamed(routeName),
       child: Row(
         children: [
-          Icon(icon, size: 34, color: AppTheme.primaryBlue),
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppTheme.primaryBlue.withValues(alpha: 0.14),
+                  AppTheme.primaryLight.withValues(alpha: 0.06),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+              border: Border.all(
+                color: AppTheme.primaryBlue.withValues(alpha: 0.18),
+                width: 1.2,
+              ),
+            ),
+            child: Icon(icon, size: 26, color: AppTheme.primaryBlue),
+          ),
           const SizedBox(width: AppTheme.space16),
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: Theme.of(context).textTheme.titleLarge),
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.2,
+                  ),
+                ),
                 const SizedBox(height: AppTheme.space4),
-                Text(description, style: Theme.of(context).textTheme.bodyMedium),
+                Text(
+                  description,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppTheme.textSecondary,
+                    height: 1.3,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ],
             ),
           ),
-          const Icon(Icons.chevron_right_rounded, color: AppTheme.textMuted),
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.03),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.chevron_right_rounded, color: AppTheme.textMuted, size: 20),
+          ),
         ],
       ),
     );

@@ -10,6 +10,7 @@ import 'package:frontend/providers/admin_process_step_provider.dart';
 import 'package:frontend/providers/admin_user_provider.dart';
 import 'package:frontend/providers/admin_log_provider.dart';
 import 'package:frontend/providers/auth_provider.dart';
+import 'package:frontend/providers/job_provider.dart';
 import 'package:frontend/screens/admin/admin_dashboard_screen.dart';
 
 class MockAuthProvider extends Mock implements AuthProvider {}
@@ -21,17 +22,26 @@ class MockAdminProcessStepProvider extends Mock
 
 class MockAdminLogProvider extends Mock implements AdminLogProvider {}
 
+class MockJobProvider extends Mock implements JobProvider {}
+
 void main() {
   late MockAuthProvider authProvider;
   late MockAdminUserProvider adminUserProvider;
   late MockAdminProcessStepProvider adminProcessStepProvider;
   late MockAdminLogProvider adminLogProvider;
+  late MockJobProvider jobProvider;
 
   setUp(() {
     authProvider = MockAuthProvider();
     adminUserProvider = MockAdminUserProvider();
     adminProcessStepProvider = MockAdminProcessStepProvider();
     adminLogProvider = MockAdminLogProvider();
+    jobProvider = MockJobProvider();
+
+    when(() => jobProvider.isManagerLoading).thenReturn(false);
+    when(() => jobProvider.managerJobs).thenReturn([]);
+    when(() => jobProvider.managerErrorMessage).thenReturn(null);
+    when(() => jobProvider.fetchManagerJobs()).thenAnswer((_) async {});
 
     when(() => adminUserProvider.isLoading).thenReturn(false);
     when(() => adminUserProvider.users).thenReturn([]);
@@ -80,6 +90,9 @@ void main() {
         ),
         ChangeNotifierProvider<AdminLogProvider>.value(
           value: adminLogProvider,
+        ),
+        ChangeNotifierProvider<JobProvider>.value(
+          value: jobProvider,
         ),
       ],
       child: const MaterialApp(

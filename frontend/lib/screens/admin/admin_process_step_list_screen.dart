@@ -478,24 +478,40 @@ class _ActiveStepCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GlassCard(
+      color: Colors.white.withValues(alpha: 0.7),
+      borderColor: Colors.white.withValues(alpha: 0.8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Step Order Badge
           Container(
-            width: 36,
-            height: 36,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
-              color: AppTheme.primaryLight.withValues(alpha: 0.2),
+              gradient: LinearGradient(
+                colors: [
+                  AppTheme.primaryBlue.withValues(alpha: 0.7),
+                  AppTheme.primaryBlue,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.primaryBlue.withValues(alpha: 0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
             ),
             alignment: Alignment.center,
             child: Text(
               '${step.stepOrder}',
               style: const TextStyle(
                 fontWeight: FontWeight.w800,
-                color: AppTheme.primaryBlue,
-                fontSize: 16,
+                color: Colors.white,
+                fontSize: 18,
               ),
             ),
           ),
@@ -510,10 +526,11 @@ class _ActiveStepCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   maxLines: 2,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
                   ),
                 ),
-                const SizedBox(height: AppTheme.space4),
+                const SizedBox(height: AppTheme.space8),
                 Wrap(
                   spacing: AppTheme.space8,
                   runSpacing: AppTheme.space4,
@@ -523,16 +540,28 @@ class _ActiveStepCard extends StatelessWidget {
                     // Edit action
                     IconButton(
                       constraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-                      padding: const EdgeInsets.symmetric(horizontal: AppTheme.space4),
-                      icon: const Icon(Icons.edit, size: 20),
+                      padding: const EdgeInsets.all(AppTheme.space4),
+                      style: IconButton.styleFrom(
+                        backgroundColor: AppTheme.surfaceLight,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
+                        ),
+                      ),
+                      icon: const Icon(Icons.edit, size: 20, color: AppTheme.textPrimary),
                       tooltip: 'Edit step',
                       onPressed: () => onEdit(context, step),
                     ),
                     // Deactivate placeholder action
                     IconButton(
                       constraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-                      padding: const EdgeInsets.symmetric(horizontal: AppTheme.space4),
-                      icon: const Icon(Icons.delete_outline, size: 20),
+                      padding: const EdgeInsets.all(AppTheme.space4),
+                      style: IconButton.styleFrom(
+                        backgroundColor: AppTheme.surfaceLight,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
+                        ),
+                      ),
+                      icon: const Icon(Icons.delete_outline, size: 20, color: AppTheme.statusCancelled),
                       tooltip: 'Deactivate step',
                       onPressed: () => onDeactivate(context, step),
                     ),
@@ -559,14 +588,17 @@ class _InactiveStepCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GlassCard(
+      color: Colors.white.withValues(alpha: 0.5),
+      borderColor: Colors.white.withValues(alpha: 0.4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 36,
-            height: 36,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
               color: AppTheme.textSecondary.withValues(alpha: 0.1),
+              border: Border.all(color: AppTheme.textSecondary.withValues(alpha: 0.2)),
               borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
             ),
             alignment: Alignment.center,
@@ -575,7 +607,7 @@ class _InactiveStepCard extends StatelessWidget {
               style: const TextStyle(
                 fontWeight: FontWeight.w800,
                 color: AppTheme.textSecondary,
-                fontSize: 16,
+                fontSize: 18,
               ),
             ),
           ),
@@ -593,18 +625,27 @@ class _InactiveStepCard extends StatelessWidget {
                     color: AppTheme.textSecondary,
                   ),
                 ),
-                const SizedBox(height: AppTheme.space4),
+                const SizedBox(height: AppTheme.space8),
                 Wrap(
                   spacing: AppTheme.space8,
-                  runSpacing: AppTheme.space4,
+                  runSpacing: AppTheme.space8,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    StatusChip.completed(label: 'Inactive'),
-                    Text(
-                      'Previous order: ${step.stepOrder}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppTheme.textSecondary,
+                    StatusChip.cancelled(label: 'Inactive'),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceLight,
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: AppTheme.textSecondary.withValues(alpha: 0.2)),
+                      ),
+                      child: Text(
+                        'Previous order: ${step.stepOrder}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textSecondary,
+                        ),
                       ),
                     ),
                     TextButton.icon(
@@ -613,9 +654,14 @@ class _InactiveStepCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: AppTheme.space8, vertical: AppTheme.space4),
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        backgroundColor: AppTheme.primaryLight.withValues(alpha: 0.1),
+                        foregroundColor: AppTheme.primaryBlue,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
+                        ),
                       ),
-                      icon: const Icon(Icons.restore, size: 18),
-                      label: const Text('Reactivate'),
+                      icon: const Icon(Icons.restore, size: 16),
+                      label: const Text('Reactivate', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                       onPressed: () => onReactivate(context, step),
                     ),
                   ],

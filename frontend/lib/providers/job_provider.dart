@@ -295,6 +295,10 @@ class JobProvider extends ChangeNotifier {
   String? get actionError => _actionError;
 
   Future<void> completeStep(String stepId) async {
+    // Prevent duplicate calls for the same or any step while a step action is in progress
+    if (_actionLoadingStepId != null) {
+      return;
+    }
     _actionLoadingStepId = stepId;
     _stepActionError = null;
     notifyListeners();
@@ -313,6 +317,10 @@ class JobProvider extends ChangeNotifier {
   }
 
   Future<void> undoStep(String stepId) async {
+    // Prevent duplicate calls while any step action is in progress
+    if (_actionLoadingStepId != null) {
+      return;
+    }
     _actionLoadingStepId = stepId;
     _stepActionError = null;
     notifyListeners();

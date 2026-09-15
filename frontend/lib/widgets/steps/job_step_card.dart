@@ -59,36 +59,54 @@ class JobStepCard extends StatelessWidget {
       );
     }
 
-    return ListTile(
-      leading: Icon(iconData, color: iconColor, size: 28),
-      title: Text(step.stepName, style: Theme.of(context).textTheme.bodyLarge),
-      subtitle:
-          step.status == JobStepStatus.completed &&
-              (step.completedBy != null || step.completedAt != null)
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return Card(
+      elevation: 2,
+      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                if (step.completedBy != null) Text('By: ${step.completedBy}'),
-                if (step.completedAt != null) Text('At: ${step.completedAt}'),
+                Icon(iconData, color: iconColor, size: 28),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    step.stepName,
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  statusLabel,
+                  style: TextStyle(
+                    color: iconColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ],
-            )
-          : null,
-      trailing: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Text(
-            statusLabel,
-            style: TextStyle(color: iconColor, fontWeight: FontWeight.bold),
-          ),
-          if (actionWidget != null) ...[
-            const SizedBox(height: 4),
-            actionWidget,
+            ),
+            if (step.status == JobStepStatus.completed &&
+                (step.completedBy != null || step.completedAt != null))
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0, left: 36.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (step.completedBy != null) Text('By: ${step.completedBy}'),
+                    if (step.completedAt != null) Text('At: ${step.completedAt}'),
+                  ],
+                ),
+              ),
+            if (actionWidget != null) ...[
+              const SizedBox(height: 8),
+              Center(child: actionWidget),
+            ],
           ],
-        ],
+        ),
       ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      dense: true,
     );
   }
 }

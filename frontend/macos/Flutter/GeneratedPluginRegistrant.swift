@@ -5,10 +5,10 @@
 import FlutterMacOS
 import Foundation
 
-import flutter_secure_storage_darwin
+import flutter_secure_storage_macos
 import public_file_saver
 
 func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
-  FlutterSecureStorageDarwinPlugin.register(with: registry.registrar(forPlugin: "FlutterSecureStorageDarwinPlugin"))
+  FlutterSecureStoragePlugin.register(with: registry.registrar(forPlugin: "FlutterSecureStoragePlugin"))
   PublicFileSaverPlugin.register(with: registry.registrar(forPlugin: "PublicFileSaverPlugin"))
 }

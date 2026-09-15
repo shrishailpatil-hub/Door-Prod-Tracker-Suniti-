@@ -21,6 +21,7 @@ class WorkerJobDetailScreen extends StatefulWidget {
 
 class _WorkerJobDetailScreenState extends State<WorkerJobDetailScreen> {
   late final TextEditingController _chalanController;
+  String _chalanText = '';
 
   @override
   void initState() {
@@ -127,6 +128,7 @@ class _WorkerJobDetailScreenState extends State<WorkerJobDetailScreen> {
           if (job.chalanNumber != null &&
               _chalanController.text != job.chalanNumber) {
             _chalanController.text = job.chalanNumber!;
+            _chalanText = job.chalanNumber!;
           }
 
           final steps = List<JobStep>.from(job.steps)
@@ -226,18 +228,23 @@ class _WorkerJobDetailScreenState extends State<WorkerJobDetailScreen> {
                     ),
                     enabled:
                         job.chalanNumber == null || job.chalanNumber!.isEmpty,
+                    onChanged: (value) {
+                      setState(() {
+                        _chalanText = value;
+                      });
+                    },
                   ),
                   const SizedBox(height: 12),
                   ElevatedButton(
                     onPressed:
                         (jobProvider.actionLoadingJobId == null &&
-                            _chalanController.text.trim().isNotEmpty &&
+                            _chalanText.trim().isNotEmpty &&
                             (job.chalanNumber == null ||
                                 job.chalanNumber!.isEmpty))
                         ? () async {
                             await jobProvider.addChalan(
                               job.id,
-                              _chalanController.text.trim(),
+                              _chalanText.trim(),
                             );
                           }
                         : null,

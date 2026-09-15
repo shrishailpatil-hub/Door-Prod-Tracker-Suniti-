@@ -1,4 +1,4 @@
-// lib/screens/manager/manager_job_logs_screen.dart
+// lib/screens/admin/admin_job_logs_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -9,16 +9,16 @@ import '../../providers/job_provider.dart';
 import '../../widgets/common/status_chip.dart';
 import '../../widgets/glass/glass_card.dart';
 
-class ManagerJobLogsScreen extends StatefulWidget {
+class AdminJobLogsScreen extends StatefulWidget {
   final String jobId;
 
-  const ManagerJobLogsScreen({super.key, required this.jobId});
+  const AdminJobLogsScreen({super.key, required this.jobId});
 
   @override
-  State<ManagerJobLogsScreen> createState() => _ManagerJobLogsScreenState();
+  State<AdminJobLogsScreen> createState() => _AdminJobLogsScreenState();
 }
 
-class _ManagerJobLogsScreenState extends State<ManagerJobLogsScreen> {
+class _AdminJobLogsScreenState extends State<AdminJobLogsScreen> {
   @override
   void initState() {
     super.initState();
@@ -77,13 +77,11 @@ class _ManagerJobLogsScreenState extends State<ManagerJobLogsScreen> {
       appBar: AppBar(title: const Text('Job History')),
       body: Consumer<JobProvider>(
         builder: (context, provider, _) {
-          if (provider.isManagerJobLogsLoading &&
-              provider.managerJobLogs.isEmpty) {
+          if (provider.isManagerJobLogsLoading && provider.managerJobLogs.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (provider.managerJobLogsErrorMessage != null &&
-              provider.managerJobLogs.isEmpty) {
+          if (provider.managerJobLogsErrorMessage != null && provider.managerJobLogs.isEmpty) {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(AppTheme.space16),
@@ -97,8 +95,7 @@ class _ManagerJobLogsScreenState extends State<ManagerJobLogsScreen> {
                     ),
                     const SizedBox(height: AppTheme.space8),
                     ElevatedButton(
-                      onPressed: () =>
-                          provider.fetchManagerJobLogs(widget.jobId),
+                      onPressed: () => provider.fetchManagerJobLogs(widget.jobId),
                       child: const Text('Retry'),
                     ),
                   ],

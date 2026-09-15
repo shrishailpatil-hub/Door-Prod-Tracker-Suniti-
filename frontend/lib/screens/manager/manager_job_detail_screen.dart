@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/theme/app_theme.dart';
 import '../../models/job.dart';
 import '../../providers/job_provider.dart';
 import '../../widgets/glass/glass_card.dart';
@@ -95,44 +96,101 @@ class _ManagerJobDetailScreenState extends State<ManagerJobDetailScreen> {
               padding: const EdgeInsets.all(16.0),
               children: [
                 GlassCard(
+                  color: Colors.white.withValues(alpha: 0.7),
+                  borderColor: Colors.white.withValues(alpha: 0.8),
+                  padding: EdgeInsets.zero,
                   child: Padding(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.all(20.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'JOB #${job.jobNumber}',
-                          style: Theme.of(context).textTheme.headlineSmall,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'JOB #${job.jobNumber}',
+                                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: -0.5,
+                                      color: AppTheme.primaryBlue,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    job.companyName,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppTheme.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            _buildJobStatusChip(job.status),
+                          ],
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          job.companyName,
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 8),
-                        _buildJobStatusChip(job.status),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 24),
                         Text(
                           '${job.completedSteps} / ${job.totalSteps} steps completed',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                        const SizedBox(height: 4),
-                        LinearProgressIndicator(
-                          value: job.totalSteps == 0
-                              ? 0
-                              : job.completedSteps / job.totalSteps,
-                        ),
-                        if (job.chalanNumber != null &&
-                            job.chalanNumber!.isNotEmpty) ...[
-                          const SizedBox(height: 12),
-                          Text(
-                            'Chalan Number',
-                            style: Theme.of(context).textTheme.titleMedium,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.textSecondary,
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            job.chalanNumber!,
-                            style: Theme.of(context).textTheme.bodyLarge,
+                        ),
+                        const SizedBox(height: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: LinearProgressIndicator(
+                            value: job.totalSteps == 0 ? 0 : job.completedSteps / job.totalSteps,
+                            minHeight: 8,
+                            backgroundColor: AppTheme.primaryBlue.withValues(alpha: 0.1),
+                            valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
+                          ),
+                        ),
+                        if (job.chalanNumber != null && job.chalanNumber!.isNotEmpty) ...[
+                          const SizedBox(height: 24),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppTheme.surfaceLight,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: AppTheme.textSecondary.withValues(alpha: 0.2)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.receipt_long_rounded, color: AppTheme.textSecondary, size: 20),
+                                const SizedBox(width: 12),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Chalan Number',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppTheme.textMuted,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                    Text(
+                                      job.chalanNumber!,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w800,
+                                        color: AppTheme.textPrimary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ],

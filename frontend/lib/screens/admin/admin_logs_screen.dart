@@ -3,10 +3,11 @@ import 'package:provider/provider.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/file_export_helper.dart';
-import '../../models/job_step_history.dart';
+import '../../models/job.dart';
 import '../../providers/admin_log_provider.dart';
-import '../../widgets/common/status_chip.dart';
+import '../../providers/job_provider.dart';
 import '../../widgets/glass/glass_card.dart';
+import 'admin_job_logs_screen.dart';
 
 class AdminLogsScreen extends StatefulWidget {
   const AdminLogsScreen({
@@ -28,52 +29,11 @@ class _AdminLogsScreenState extends State<AdminLogsScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      context.read<AdminLogProvider>().fetchLogs();
+      context.read<JobProvider>().fetchManagerJobs();
     });
   }
 
-  Widget _buildActionBadge(JobStepAction action) {
-    switch (action) {
-      case JobStepAction.completed:
-        return StatusChip.completed(label: 'Step Completed');
-      case JobStepAction.undone:
-        return const StatusChip(
-          label: 'Step Undone',
-          backgroundColor: Color(0xFFFEF3C7),
-          textColor: Color(0xFFD97706),
-          icon: Icons.undo_rounded,
-        );
-      case JobStepAction.reopened:
-        return const StatusChip(
-          label: 'Step Reopened',
-          backgroundColor: Color(0xFFE0E7FF),
-          textColor: Color(0xFF4F46E5),
-          icon: Icons.refresh_rounded,
-        );
-      case JobStepAction.chalanAdded:
-        return const StatusChip(
-          label: 'Chalan Added',
-          backgroundColor: Color(0xFFF3E8FF),
-          textColor: Color(0xFF7E22CE),
-          icon: Icons.receipt_long_rounded,
-        );
-      case JobStepAction.jobCompleted:
-        return StatusChip.completed(
-          label: 'Job Completed',
-          icon: Icons.verified_rounded,
-        );
-    }
-  }
-
-  String _formatTimestamp(DateTime dt) {
-    final local = dt.toLocal();
-    final y = local.year.toString().padLeft(4, '0');
-    final m = local.month.toString().padLeft(2, '0');
-    final d = local.day.toString().padLeft(2, '0');
-    final hr = local.hour.toString().padLeft(2, '0');
-    final min = local.minute.toString().padLeft(2, '0');
-    return '$y-$m-$d $hr:$min';
-  }
+  bool _isActive(Job job) => job.status.toUpperCase() != 'COMPLETED';
 
   Future<void> _handleExport() async {
     final provider = context.read<AdminLogProvider>();
@@ -111,11 +71,10 @@ class _AdminLogsScreenState extends State<AdminLogsScreen> {
         const SnackBar(content: Text('Excel file exported successfully')),
       );
     } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to export Excel file')),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to export Excel file')),
+      );
     } finally {
       if (mounted) {
         setState(() => _isSaving = false);
@@ -152,13 +111,12 @@ class _AdminLogsScreenState extends State<AdminLogsScreen> {
           ),
         ],
       ),
-      body: Consumer<AdminLogProvider>(
+      body: Consumer<JobProvider>(
         builder: (context, provider, _) {
-          if (provider.isLoading && provider.logs.isEmpty) {
+          if (provider.isManagerLoading && provider.managerJobs.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
-
-          if (provider.errorMessage != null && provider.logs.isEmpty) {
+          if (provider.managerErrorMessage != null && provider.managerJobs.isEmpty) {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(AppTheme.space16),
@@ -166,13 +124,13 @@ class _AdminLogsScreenState extends State<AdminLogsScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      provider.errorMessage!,
+                      provider.managerErrorMessage!,
                       textAlign: TextAlign.center,
                       style: const TextStyle(color: Colors.red),
                     ),
                     const SizedBox(height: AppTheme.space8),
                     ElevatedButton(
-                      onPressed: () => provider.fetchLogs(),
+                      onPressed: () => provider.fetchManagerJobs(),
                       child: const Text('Retry'),
                     ),
                   ],
@@ -181,68 +139,105 @@ class _AdminLogsScreenState extends State<AdminLogsScreen> {
             );
           }
 
-          if (provider.logs.isEmpty) {
-            return RefreshIndicator(
-              onRefresh: () async => provider.fetchLogs(),
-              child: ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: const [
-                  Padding(
-                    padding: EdgeInsets.only(top: 80.0),
-                    child: Center(child: Text('No audit logs available')),
-                  ),
-                ],
-              ),
-            );
+          final activeJobs = provider.managerJobs.where(_isActive).toList();
+          if (activeJobs.isEmpty) {
+            return const Center(child: Text('No active jobs available'));
           }
 
           return RefreshIndicator(
-            onRefresh: () async => provider.fetchLogs(),
+            onRefresh: () async => provider.fetchManagerJobs(),
             child: ListView.builder(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(AppTheme.space16),
-              itemCount: provider.logs.length,
+              itemCount: activeJobs.length,
               itemBuilder: (context, index) {
-                final log = provider.logs[index];
+                final job = activeJobs[index];
                 return Padding(
                   padding: const EdgeInsets.only(bottom: AppTheme.space12),
                   child: GlassCard(
-                    padding: const EdgeInsets.all(AppTheme.space16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    color: Colors.white.withValues(alpha: 0.7),
+                    borderColor: Colors.white.withValues(alpha: 0.8),
+                    padding: EdgeInsets.zero,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => AdminJobLogsScreen(jobId: job.id),
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppTheme.space16),
+                        child: Row(
                           children: [
-                            _buildActionBadge(log.action),
-                            Text(
-                              _formatTimestamp(log.createdAt),
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(color: AppTheme.textMuted),
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    AppTheme.primaryBlue.withValues(alpha: 0.7),
+                                    AppTheme.primaryBlue,
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppTheme.primaryBlue.withValues(alpha: 0.3),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(Icons.assignment_outlined, color: Colors.white),
                             ),
+                            const SizedBox(width: AppTheme.space16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Job ${job.jobNumber}', 
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: -0.5,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Company: ${job.companyName}', 
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppTheme.textSecondary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: AppTheme.space8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.statusPendingBg,
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(color: AppTheme.statusPending.withValues(alpha: 0.3)),
+                                    ),
+                                    child: Text(
+                                      'Status: ${job.status}', 
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w800,
+                                        color: AppTheme.statusPending,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(Icons.chevron_right, color: AppTheme.textMuted),
                           ],
                         ),
-                        const SizedBox(height: AppTheme.space8),
-                        if (log.stepName != null &&
-                            log.stepName!.isNotEmpty) ...[
-                          Text(
-                            'Step: ${log.stepName}',
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          const SizedBox(height: AppTheme.space4),
-                        ],
-                        Text(
-                          'Job ID: ${log.jobId}',
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(color: AppTheme.textSecondary),
-                        ),
-                        const SizedBox(height: AppTheme.space4),
-                        Text(
-                          'By: ${log.performedBy}',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: AppTheme.textMuted),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 );

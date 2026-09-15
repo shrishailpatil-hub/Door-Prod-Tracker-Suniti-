@@ -36,7 +36,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   provider: ^6.1.5+1
   http: ^1.6.0
-  flutter_secure_storage: ^11.0.0
+  flutter_secure_storage: ^9.2.4
   public_file_saver: ^1.2.0
 
 dev_dependencies:
