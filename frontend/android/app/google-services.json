@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1052283633776",
+    "project_id": "suniti-door-workflow",
+    "storage_bucket": "suniti-door-workflow.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1052283633776:android:278719c061dd3c337674b5",
+        "android_client_info": {
+          "package_name": "com.doorworkflow.frontend"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAgG1m6cm9zaz8_ZyNAc1W9LLvqoz5z25M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

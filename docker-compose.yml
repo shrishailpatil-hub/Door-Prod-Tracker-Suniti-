@@ -1,4 +1,4 @@
-﻿services:
+services:
   postgres:
     image: postgres:16-alpine
     container_name: door-workflow-postgres
@@ -33,9 +33,11 @@
       DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       JWT_SECRET: ${JWT_SECRET:-0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-86400}
+      FIREBASE_SERVICE_ACCOUNT_PATH: /run/secrets/firebase-service-account.json
     ports:
       - "8080:8080"
-
+    volumes:
+      - ${FIREBASE_SERVICE_ACCOUNT_PATH_HOST}:/run/secrets/firebase-service-account.json:ro
 volumes:
   postgres_data:
     name: door_workflow_postgres_data
