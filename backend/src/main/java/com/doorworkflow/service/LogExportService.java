@@ -1,7 +1,12 @@
 package com.doorworkflow.service;
 
-import com.doorworkflow.entity.JobStepHistory;
-import com.doorworkflow.repository.JobStepHistoryRepository;
+import com.doorworkflow.entity.Job;
+import com.doorworkflow.entity.JobStep;
+import com.doorworkflow.entity.ProcessStep;
+import com.doorworkflow.enums.JobStepStatus;
+import com.doorworkflow.repository.JobRepository;
+import com.doorworkflow.repository.JobStepRepository;
+import com.doorworkflow.repository.ProcessStepRepository;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
@@ -11,35 +16,60 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class LogExportService {
 
     private static final String SHEET_NAME = "Job Logs";
-    private static final String[] HEADERS = {
-            "Job Number",
-            "Company Name",
-            "Job Status",
-            "Chalan Number",
-            "Step Name",
-            "Action",
-            "Performed By",
-            "Timestamp"
+
+    private static final String[] FIXED_HEADERS = {
+            "FR",
+            "CUSTOMER NAME",
+            "DELIVERY ADDRESS",
+            "PO NO.",
+            "GST No.",
+            "PO DATE",
+            "ORDER DATE",
+            "DELIVERY DATE",
+            "DOOR'S",
+            "DOOR LEAF",
+            "COLOUR SHADE"
     };
 
-    private static final DateTimeFormatter TIMESTAMP_FORMATTER =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.of("UTC"));
+    private static final String[] FINAL_FIXED_HEADERS = {
+            "CHALLAN NO.",
+            "VEHICLE DETAILS"
+    };
 
-    private final JobStepHistoryRepository jobStepHistoryRepository;
+    private static final DateTimeFormatter DATE_FORMATTER =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
-    public LogExportService(JobStepHistoryRepository jobStepHistoryRepository) {
-        this.jobStepHistoryRepository = jobStepHistoryRepository;
+    private final JobRepository jobRepository;
+    private final JobStepRepository jobStepRepository;
+    private final ProcessStepRepository processStepRepository;
+
+    public LogExportService(JobRepository jobRepository,
+                            JobStepRepository jobStepRepository,
+                            ProcessStepRepository processStepRepository) {
+        this.jobRepository = jobRepository;
+        this.jobStepRepository = jobStepRepository;
+        this.processStepRepository = processStepRepository;
     }
 
     @Transactional(readOnly = true)
     public byte[] generateJobLogsExcel() {
-        List<JobStepHistory> logs = jobStepHistoryRepository.findAllWithDetailsOrderByCreatedAtDesc();
+        List<Job> jobs = jobRepository.findAllByOrderByCreatedAtDesc();
+        List<JobStep> allSteps = jobStepRepository.findAll();
+        List<ProcessStep> activeProcessSteps = processStepRepository.findByIsActiveTrueOrderByStepOrderAsc();
+
+        Map<UUID, List<JobStep>> stepsByJobId = allSteps.stream()
+                .filter(step -> step.getJob() != null)
+                .collect(Collectors.groupingBy(step -> step.getJob().getId()));
 
         try (Workbook workbook = new XSSFWorkbook();
              ByteArrayOutputStream out = new ByteArrayOutputStream()) {
@@ -47,83 +77,70 @@ public class LogExportService {
             Sheet sheet = workbook.createSheet(SHEET_NAME);
             sheet.createFreezePane(0, 1);
 
-            // Header Style
             CellStyle headerStyle = workbook.createCellStyle();
             Font headerFont = workbook.createFont();
             headerFont.setBold(true);
-            headerFont.setColor(IndexedColors.BLACK.getIndex());
             headerStyle.setFont(headerFont);
             headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
             headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-            headerStyle.setBorderBottom(BorderStyle.THIN);
-            headerStyle.setBorderTop(BorderStyle.THIN);
-            headerStyle.setBorderLeft(BorderStyle.THIN);
-            headerStyle.setBorderRight(BorderStyle.THIN);
-            headerStyle.setAlignment(HorizontalAlignment.LEFT);
 
-            // Regular Data Cell Style (optional borders for clean tabular view)
             CellStyle textStyle = workbook.createCellStyle();
             DataFormat dataFormat = workbook.createDataFormat();
-            textStyle.setDataFormat(dataFormat.getFormat("@")); // text format
+            textStyle.setDataFormat(dataFormat.getFormat("@"));
 
-            // Create Header Row
+            // Build dynamic headers: Fixed + ProcessSteps + Final Fixed
+            List<String> headersList = new ArrayList<>();
+            for (String h : FIXED_HEADERS) {
+                headersList.add(h);
+            }
+            for (ProcessStep ps : activeProcessSteps) {
+                headersList.add(ps.getName());
+            }
+            for (String h : FINAL_FIXED_HEADERS) {
+                headersList.add(h);
+            }
+
             Row headerRow = sheet.createRow(0);
-            for (int col = 0; col < HEADERS.length; col++) {
+            for (int col = 0; col < headersList.size(); col++) {
                 Cell cell = headerRow.createCell(col);
-                cell.setCellValue(HEADERS[col]);
+                cell.setCellValue(headersList.get(col));
                 cell.setCellStyle(headerStyle);
             }
 
-            // Create Data Rows
             int rowIdx = 1;
-            for (JobStepHistory log : logs) {
+            for (Job job : jobs) {
                 Row row = sheet.createRow(rowIdx++);
+                List<JobStep> jobSteps = stepsByJobId.getOrDefault(job.getId(), List.of());
 
-                // 0: Job Number
-                String jobNumber = log.getJob() != null ? log.getJob().getJobNumber() : "";
-                row.createCell(0).setCellValue(jobNumber);
+                int colIdx = 0;
 
-                // 1: Company Name
-                String companyName = log.getJob() != null ? log.getJob().getCompanyName() : "";
-                row.createCell(1).setCellValue(companyName);
+                // Fixed job columns
+                row.createCell(colIdx++).setCellValue(nullToEmpty(job.getFr()));
+                row.createCell(colIdx++).setCellValue(nullToEmpty(job.getCompanyName()));
+                row.createCell(colIdx++).setCellValue(nullToEmpty(job.getDeliveryAddress()));
+                row.createCell(colIdx++).setCellValue(nullToEmpty(job.getPoNo()));
+                row.createCell(colIdx++).setCellValue(nullToEmpty(job.getGstNo()));
+                row.createCell(colIdx++).setCellValue(job.getPoDate() != null ? job.getPoDate().format(DATE_FORMATTER) : "");
+                row.createCell(colIdx++).setCellValue(job.getOrderDate() != null ? job.getOrderDate().format(DATE_FORMATTER) : "");
+                row.createCell(colIdx++).setCellValue(job.getDeliveryDate() != null ? job.getDeliveryDate().format(DATE_FORMATTER) : "");
+                row.createCell(colIdx++).setCellValue(nullToEmpty(job.getDoors()));
+                row.createCell(colIdx++).setCellValue(nullToEmpty(job.getDoorLeaf()));
+                row.createCell(colIdx++).setCellValue(nullToEmpty(job.getColourShade()));
 
-                // 2: Job Status
-                String jobStatus = (log.getJob() != null && log.getJob().getStatus() != null)
-                        ? log.getJob().getStatus().name()
-                        : "";
-                row.createCell(2).setCellValue(jobStatus);
+                // Dynamic process-step columns
+                for (ProcessStep ps : activeProcessSteps) {
+                    row.createCell(colIdx++).setCellValue(getStageValue(jobSteps, ps.getName()));
+                }
 
-                // 3: Chalan Number (displayed explicitly as text)
-                String chalanNumber = (log.getJob() != null && log.getJob().getChalanNumber() != null)
-                        ? log.getJob().getChalanNumber()
-                        : "";
-                Cell chalanCell = row.createCell(3);
-                chalanCell.setCellValue(chalanNumber);
+                // Final fixed columns
+                Cell chalanCell = row.createCell(colIdx++);
+                chalanCell.setCellValue(nullToEmpty(job.getChalanNumber()));
                 chalanCell.setCellStyle(textStyle);
 
-                // 4: Step Name (blank for job-level events like CHALAN_ADDED, JOB_COMPLETED)
-                String stepName = (log.getJobStep() != null && log.getJobStep().getStepName() != null)
-                        ? log.getJobStep().getStepName()
-                        : "";
-                row.createCell(4).setCellValue(stepName);
-
-                // 5: Action
-                String action = log.getAction() != null ? log.getAction().name() : "";
-                row.createCell(5).setCellValue(action);
-
-                // 6: Performed By
-                String performedBy = log.getPerformedBy() != null ? log.getPerformedBy().getName() : "";
-                row.createCell(6).setCellValue(performedBy);
-
-                // 7: Timestamp
-                String timestamp = log.getCreatedAt() != null
-                        ? TIMESTAMP_FORMATTER.format(log.getCreatedAt())
-                        : "";
-                row.createCell(7).setCellValue(timestamp);
+                row.createCell(colIdx++).setCellValue(nullToEmpty(job.getVehicleDetails()));
             }
 
-            // Auto-size columns
-            for (int col = 0; col < HEADERS.length; col++) {
+            for (int col = 0; col < headersList.size(); col++) {
                 sheet.autoSizeColumn(col);
             }
 
@@ -132,5 +149,27 @@ public class LogExportService {
         } catch (IOException e) {
             throw new RuntimeException("Failed to generate Excel export", e);
         }
+    }
+
+    private String getStageValue(List<JobStep> steps, String stageName) {
+        for (JobStep step : steps) {
+            if (step.getStepName() != null && step.getStepName().equalsIgnoreCase(stageName)) {
+                if (step.getStatus() == JobStepStatus.COMPLETED && step.getCompletedAt() != null) {
+                    String dateStr = DATE_FORMATTER.format(
+                            step.getCompletedAt().atZone(ZoneId.of("Asia/Kolkata")));
+                    String person = (step.getCompletedBy() != null && step.getCompletedBy().getName() != null)
+                            ? step.getCompletedBy().getName()
+                            : "Unknown";
+                    return dateStr + " - " + person;
+                }
+                return "Pending";
+            }
+        }
+        // No JobStep record exists for this process step (e.g., step added after job creation)
+        return "Pending";
+    }
+
+    private static String nullToEmpty(String value) {
+        return value != null ? value : "";
     }
 }

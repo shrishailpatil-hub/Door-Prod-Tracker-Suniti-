@@ -110,7 +110,7 @@ class JobCreationServiceTest {
             return j;
         });
 
-        CreateJobRequest request = new CreateJobRequest("JOB-100", "Acme Doors");
+        CreateJobRequest request = new CreateJobRequest("JOB-100", "Acme Doors", null, null, null, null, null, null, null, null, null, null, null);
         JobResponse response = jobService.createJob(request);
 
         verify(jobRepository).save(jobCaptor.capture());
@@ -131,7 +131,7 @@ class JobCreationServiceTest {
             return j;
         });
 
-        CreateJobRequest request = new CreateJobRequest("JOB-101", "Acme Doors");
+        CreateJobRequest request = new CreateJobRequest("JOB-101", "Acme Doors", null, null, null, null, null, null, null, null, null, null, null);
         JobResponse response = jobService.createJob(request);
 
         verify(jobRepository).save(jobCaptor.capture());
@@ -157,7 +157,7 @@ class JobCreationServiceTest {
         });
         when(jobStepRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        CreateJobRequest request = new CreateJobRequest("JOB-102", "Acme Doors");
+        CreateJobRequest request = new CreateJobRequest("JOB-102", "Acme Doors", null, null, null, null, null, null, null, null, null, null, null);
         JobResponse response = jobService.createJob(request);
 
         verify(jobStepRepository).saveAll(jobStepsCaptor.capture());
@@ -187,7 +187,7 @@ class JobCreationServiceTest {
         });
         when(jobStepRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        CreateJobRequest request = new CreateJobRequest("JOB-103", "Acme Doors");
+        CreateJobRequest request = new CreateJobRequest("JOB-103", "Acme Doors", null, null, null, null, null, null, null, null, null, null, null);
         JobResponse response = jobService.createJob(request);
 
         verify(jobStepRepository).saveAll(jobStepsCaptor.capture());
@@ -213,7 +213,7 @@ class JobCreationServiceTest {
         });
         when(jobStepRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        CreateJobRequest request = new CreateJobRequest("JOB-104", "Acme Doors");
+        CreateJobRequest request = new CreateJobRequest("JOB-104", "Acme Doors", null, null, null, null, null, null, null, null, null, null, null);
         JobResponse response = jobService.createJob(request);
 
         verify(jobStepRepository).saveAll(jobStepsCaptor.capture());
@@ -238,7 +238,7 @@ class JobCreationServiceTest {
         });
         when(jobStepRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        CreateJobRequest request = new CreateJobRequest("JOB-105", "Acme Doors");
+        CreateJobRequest request = new CreateJobRequest("JOB-105", "Acme Doors", null, null, null, null, null, null, null, null, null, null, null);
         JobResponse response = jobService.createJob(request);
 
         verify(jobStepRepository).saveAll(jobStepsCaptor.capture());
@@ -269,7 +269,7 @@ class JobCreationServiceTest {
         });
         when(jobStepRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        CreateJobRequest request = new CreateJobRequest("JOB-106", "Acme Doors");
+        CreateJobRequest request = new CreateJobRequest("JOB-106", "Acme Doors", null, null, null, null, null, null, null, null, null, null, null);
         JobResponse response = jobService.createJob(request);
 
         verify(processStepRepository).findByIsActive(true);
@@ -291,7 +291,7 @@ class JobCreationServiceTest {
             return j;
         });
 
-        CreateJobRequest request = new CreateJobRequest("JOB-107", "Acme Doors");
+        CreateJobRequest request = new CreateJobRequest("JOB-107", "Acme Doors", null, null, null, null, null, null, null, null, null, null, null);
         JobResponse response = jobService.createJob(request);
 
         verify(jobStepRepository, never()).saveAll(anyList());
@@ -305,7 +305,7 @@ class JobCreationServiceTest {
         when(jobRepository.findByJobNumber("JOB-DUPE"))
                 .thenReturn(Optional.of(Job.builder().jobNumber("JOB-DUPE").build()));
 
-        CreateJobRequest request = new CreateJobRequest("JOB-DUPE", "Acme Doors");
+        CreateJobRequest request = new CreateJobRequest("JOB-DUPE", "Acme Doors", null, null, null, null, null, null, null, null, null, null, null);
         ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> jobService.createJob(request));
 
         assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
@@ -327,7 +327,7 @@ class JobCreationServiceTest {
             return j;
         });
 
-        CreateJobRequest request = new CreateJobRequest("   JOB-TRIM   ", "   Trimmed Company   ");
+        CreateJobRequest request = new CreateJobRequest("   JOB-TRIM   ", "   Trimmed Company   ", null, null, null, null, null, null, null, null, null, null, null);
         jobService.createJob(request);
 
         verify(jobRepository).findByJobNumber("JOB-TRIM");
@@ -354,7 +354,7 @@ class JobCreationServiceTest {
         });
         when(jobStepRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        CreateJobRequest request = new CreateJobRequest("JOB-SNAP", "Snapshot Co");
+        CreateJobRequest request = new CreateJobRequest("JOB-SNAP", "Snapshot Co", null, null, null, null, null, null, null, null, null, null, null);
         JobResponse response = jobService.createJob(request);
 
         verify(jobStepRepository).saveAll(jobStepsCaptor.capture());
@@ -392,7 +392,7 @@ class JobCreationServiceTest {
         });
         when(jobStepRepository.saveAll(anyList())).thenThrow(new RuntimeException("DB error saving steps"));
 
-        CreateJobRequest request = new CreateJobRequest("JOB-TX", "Acme Doors");
+        CreateJobRequest request = new CreateJobRequest("JOB-TX", "Acme Doors", null, null, null, null, null, null, null, null, null, null, null);
 
         RuntimeException thrown = assertThrows(RuntimeException.class, () -> jobService.createJob(request));
         assertThat(thrown.getMessage()).isEqualTo("DB error saving steps");
@@ -416,7 +416,7 @@ class JobCreationServiceTest {
         when(jobRepository.findByJobNumber("JOB-REJECT")).thenReturn(Optional.empty());
         when(userRepository.findByEmail("worker@example.com")).thenReturn(Optional.of(workerUser));
 
-        CreateJobRequest request = new CreateJobRequest("JOB-REJECT", "Acme Doors");
+        CreateJobRequest request = new CreateJobRequest("JOB-REJECT", "Acme Doors", null, null, null, null, null, null, null, null, null, null, null);
 
         assertThrows(AccessDeniedException.class, () -> jobService.createJob(request));
         verify(jobRepository, never()).save(any());
@@ -430,7 +430,7 @@ class JobCreationServiceTest {
 
         when(jobRepository.findByJobNumber("JOB-NOAUTH")).thenReturn(Optional.empty());
 
-        CreateJobRequest request = new CreateJobRequest("JOB-NOAUTH", "Acme Doors");
+        CreateJobRequest request = new CreateJobRequest("JOB-NOAUTH", "Acme Doors", null, null, null, null, null, null, null, null, null, null, null);
 
         ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> jobService.createJob(request));
         assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);

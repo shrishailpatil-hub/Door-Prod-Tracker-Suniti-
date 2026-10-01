@@ -5,20 +5,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:provider/provider.dart';
 
-import 'package:frontend/models/job.dart';
+import 'package:frontend/models/job_step_history.dart';
 import 'package:frontend/core/utils/file_export_helper.dart';
 import 'package:frontend/providers/admin_log_provider.dart';
-import 'package:frontend/providers/job_provider.dart';
 import 'package:frontend/screens/admin/admin_logs_screen.dart';
-import 'package:frontend/screens/admin/admin_job_logs_screen.dart';
 
 class MockAdminLogProvider extends Mock implements AdminLogProvider {}
-class MockJobProvider extends Mock implements JobProvider {}
+
 class MockFileExportHelper extends Mock implements FileExportHelper {}
 
 void main() {
   late MockAdminLogProvider mockAdminLogProvider;
-  late MockJobProvider mockJobProvider;
   late MockFileExportHelper mockFileExportHelper;
 
   setUpAll(() {
@@ -27,131 +24,176 @@ void main() {
 
   setUp(() {
     mockAdminLogProvider = MockAdminLogProvider();
-    mockJobProvider = MockJobProvider();
     mockFileExportHelper = MockFileExportHelper();
-
-    when(() => mockJobProvider.isManagerLoading).thenReturn(false);
-    when(() => mockJobProvider.managerJobs).thenReturn([]);
-    when(() => mockJobProvider.managerErrorMessage).thenReturn(null);
-    when(() => mockJobProvider.fetchManagerJobs()).thenAnswer((_) async {});
-    when(() => mockJobProvider.isManagerJobLogsLoading).thenReturn(false);
-    when(() => mockJobProvider.managerJobLogs).thenReturn([]);
-    when(() => mockJobProvider.managerJobLogsErrorMessage).thenReturn(null);
-    when(() => mockJobProvider.fetchManagerJobLogs(any())).thenAnswer((_) async {});
-
+    when(() => mockAdminLogProvider.isLoading).thenReturn(false);
+    when(() => mockAdminLogProvider.logs).thenReturn([]);
+    when(() => mockAdminLogProvider.errorMessage).thenReturn(null);
     when(() => mockAdminLogProvider.isExporting).thenReturn(false);
     when(() => mockAdminLogProvider.exportErrorMessage).thenReturn(null);
-    when(() => mockAdminLogProvider.exportLogsExcel())
-        .thenAnswer((_) async => Uint8List(10));
-    when(() => mockFileExportHelper.saveExcelFile(bytes: any(named: 'bytes')))
-        .thenAnswer((_) async => 'content://downloads/admin_audit.xlsx');
+    when(() => mockAdminLogProvider.fetchLogs()).thenAnswer((_) async {});
+    when(
+      () => mockAdminLogProvider.exportLogsExcel(),
+    ).thenAnswer((_) async => Uint8List(10));
+    when(
+      () => mockFileExportHelper.saveExcelFile(bytes: any(named: 'bytes')),
+    ).thenAnswer((_) async => 'content://downloads/audit.xlsx');
   });
 
   Widget buildTestWidget() {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider<AdminLogProvider>.value(value: mockAdminLogProvider),
-        ChangeNotifierProvider<JobProvider>.value(value: mockJobProvider),
-      ],
+    return ChangeNotifierProvider<AdminLogProvider>.value(
+      value: mockAdminLogProvider,
       child: MaterialApp(
         home: AdminLogsScreen(fileExportHelper: mockFileExportHelper),
       ),
     );
   }
 
-  Job createTestJob({
-    required String id,
-    required String jobNumber,
-    required String companyName,
-    required String status,
-  }) {
-    return Job(
-      id: id,
-      jobNumber: jobNumber,
-      companyName: companyName,
-      status: status,
-      createdBy: 'Admin',
-      createdAt: DateTime.parse('2026-09-09T10:00:00.000Z'),
-      updatedAt: DateTime.parse('2026-09-09T10:00:00.000Z'),
-      steps: [],
-    );
-  }
-
   group('AdminLogsScreen Widget Tests', () {
-    testWidgets('1. Shows loading indicator during initial jobs load', (tester) async {
-      when(() => mockJobProvider.isManagerLoading).thenReturn(true);
+    testWidgets(
+      '1. Shows loading indicator when logs are loading and list is empty',
+      (tester) async {
+        when(() => mockAdminLogProvider.isLoading).thenReturn(true);
 
-      await tester.pumpWidget(buildTestWidget());
-      await tester.pump();
+        await tester.pumpWidget(buildTestWidget());
+        await tester.pump();
 
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    });
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      },
+    );
 
-    testWidgets('2. Shows empty state message when active jobs list is empty', (tester) async {
+    testWidgets('2. Shows empty state message when logs list is empty', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
-      expect(find.text('No active jobs available'), findsOneWidget);
+      expect(find.text('No audit logs available'), findsOneWidget);
     });
 
-    testWidgets('3. Renders only active jobs, filtering out COMPLETED and completed case-insensitively', (tester) async {
-      final jobs = [
-        createTestJob(id: 'j-1', jobNumber: 'JOB-101', companyName: 'Acme Doors', status: 'IN_PROGRESS'),
-        createTestJob(id: 'j-2', jobNumber: 'JOB-102', companyName: 'Beta Windows', status: 'WORK_DONE'),
-        createTestJob(id: 'j-3', jobNumber: 'JOB-103', companyName: 'Completed Corp', status: 'COMPLETED'),
-        createTestJob(id: 'j-4', jobNumber: 'JOB-104', companyName: 'Lower Completed', status: 'completed'),
+    testWidgets(
+      '3. Renders loaded audit entries with step, job ID, performer, timestamp',
+      (tester) async {
+        final logs = [
+          JobStepHistory(
+            id: 'log-1',
+            jobId: 'job-101',
+            jobStepId: 'step-1',
+            stepName: 'Cutting & Sizing',
+            action: JobStepAction.completed,
+            performedBy: 'Worker Bob',
+            createdAt: DateTime.parse('2026-09-09T10:30:00.000Z'),
+          ),
+        ];
+        when(() => mockAdminLogProvider.logs).thenReturn(logs);
+
+        await tester.pumpWidget(buildTestWidget());
+        await tester.pumpAndSettle();
+
+        expect(find.text('Step Completed'), findsOneWidget);
+        expect(find.text('Step: Cutting & Sizing'), findsOneWidget);
+        expect(find.text('Job ID: job-101'), findsOneWidget);
+        expect(find.text('By: Worker Bob'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      '4, 5. All five actions and null step/jobStepId render correctly without crashing',
+      (tester) async {
+        final logs = [
+          JobStepHistory(
+            id: 'log-1',
+            jobId: 'j-1',
+            jobStepId: 's-1',
+            stepName: 'Welding',
+            action: JobStepAction.completed,
+            performedBy: 'Worker 1',
+            createdAt: DateTime.parse('2026-09-09T10:00:00.000Z'),
+          ),
+          JobStepHistory(
+            id: 'log-2',
+            jobId: 'j-2',
+            jobStepId: 's-2',
+            stepName: 'Welding',
+            action: JobStepAction.undone,
+            performedBy: 'Worker 2',
+            createdAt: DateTime.parse('2026-09-09T10:05:00.000Z'),
+          ),
+          JobStepHistory(
+            id: 'log-3',
+            jobId: 'j-3',
+            jobStepId: 's-3',
+            stepName: 'Bending',
+            action: JobStepAction.reopened,
+            performedBy: 'Manager Alice',
+            createdAt: DateTime.parse('2026-09-09T10:10:00.000Z'),
+          ),
+          JobStepHistory(
+            id: 'log-4',
+            jobId: 'j-4',
+            jobStepId: null,
+            stepName: null,
+            action: JobStepAction.chalanAdded,
+            performedBy: 'Worker 3',
+            createdAt: DateTime.parse('2026-09-09T10:15:00.000Z'),
+          ),
+          JobStepHistory(
+            id: 'log-5',
+            jobId: 'j-5',
+            jobStepId: null,
+            stepName: null,
+            action: JobStepAction.jobCompleted,
+            performedBy: 'Worker 4',
+            createdAt: DateTime.parse('2026-09-09T10:20:00.000Z'),
+          ),
+        ];
+        when(() => mockAdminLogProvider.logs).thenReturn(logs);
+
+        await tester.pumpWidget(buildTestWidget());
+        await tester.pumpAndSettle();
+
+        expect(find.text('Step Completed'), findsOneWidget);
+        expect(find.text('Step Undone'), findsOneWidget);
+        expect(find.text('Step Reopened'), findsOneWidget);
+
+        await tester.scrollUntilVisible(find.text('Job Completed'), 200.0);
+        expect(find.text('Chalan Added'), findsOneWidget);
+        expect(find.text('Job Completed'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      '6, 7. Shows error state and retry button triggers fetchLogs',
+      (tester) async {
+        when(
+          () => mockAdminLogProvider.errorMessage,
+        ).thenReturn('Network error loading logs');
+
+        await tester.pumpWidget(buildTestWidget());
+        await tester.pumpAndSettle();
+
+        expect(find.text('Network error loading logs'), findsOneWidget);
+        final retryButton = find.widgetWithText(ElevatedButton, 'Retry');
+        expect(retryButton, findsOneWidget);
+
+        await tester.tap(retryButton);
+        verify(
+          () => mockAdminLogProvider.fetchLogs(),
+        ).called(greaterThanOrEqualTo(1));
+      },
+    );
+
+    testWidgets('8. Pull-to-refresh triggers fetchLogs', (tester) async {
+      final logs = [
+        JobStepHistory(
+          id: 'log-1',
+          jobId: 'j-1',
+          stepName: 'Cut',
+          action: JobStepAction.completed,
+          performedBy: 'Worker 1',
+          createdAt: DateTime.parse('2026-09-09T10:00:00.000Z'),
+        ),
       ];
-      when(() => mockJobProvider.managerJobs).thenReturn(jobs);
-
-      await tester.pumpWidget(buildTestWidget());
-      await tester.pumpAndSettle();
-
-      expect(find.text('Job JOB-101'), findsOneWidget);
-      expect(find.text('Company: Acme Doors'), findsOneWidget);
-      expect(find.text('Job JOB-102'), findsOneWidget);
-      expect(find.text('Company: Beta Windows'), findsOneWidget);
-
-      expect(find.text('Job JOB-103'), findsNothing);
-      expect(find.text('Company: Completed Corp'), findsNothing);
-      expect(find.text('Job JOB-104'), findsNothing);
-    });
-
-    testWidgets('4. Tapping an active job navigates to AdminJobLogsScreen with job ID', (tester) async {
-      final jobs = [
-        createTestJob(id: 'job-999', jobNumber: 'JOB-999', companyName: 'Gamma Entry', status: 'IN_PROGRESS'),
-      ];
-      when(() => mockJobProvider.managerJobs).thenReturn(jobs);
-
-      await tester.pumpWidget(buildTestWidget());
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('Job JOB-999'));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(AdminJobLogsScreen), findsOneWidget);
-      expect(find.text('Job History'), findsOneWidget);
-      verify(() => mockJobProvider.fetchManagerJobLogs('job-999')).called(1);
-    });
-
-    testWidgets('5. Shows error state and retry button triggers fetchManagerJobs', (tester) async {
-      when(() => mockJobProvider.managerErrorMessage).thenReturn('Failed to load jobs');
-
-      await tester.pumpWidget(buildTestWidget());
-      await tester.pumpAndSettle();
-
-      expect(find.text('Failed to load jobs'), findsOneWidget);
-      final retryButton = find.widgetWithText(ElevatedButton, 'Retry');
-      expect(retryButton, findsOneWidget);
-
-      await tester.tap(retryButton);
-      verify(() => mockJobProvider.fetchManagerJobs()).called(greaterThanOrEqualTo(1));
-    });
-
-    testWidgets('6. Pull-to-refresh triggers fetchManagerJobs', (tester) async {
-      final jobs = [
-        createTestJob(id: 'j-1', jobNumber: 'JOB-101', companyName: 'Acme', status: 'IN_PROGRESS'),
-      ];
-      when(() => mockJobProvider.managerJobs).thenReturn(jobs);
+      when(() => mockAdminLogProvider.logs).thenReturn(logs);
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
@@ -163,10 +205,14 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      verify(() => mockJobProvider.fetchManagerJobs()).called(greaterThanOrEqualTo(1));
+      verify(
+        () => mockAdminLogProvider.fetchLogs(),
+      ).called(greaterThanOrEqualTo(1));
     });
 
-    testWidgets('7. Export saves Excel bytes and shows success SnackBar', (tester) async {
+    testWidgets('9, 12. Export saves Excel bytes and shows success SnackBar', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
@@ -177,11 +223,15 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(() => mockAdminLogProvider.exportLogsExcel()).called(1);
-      verify(() => mockFileExportHelper.saveExcelFile(bytes: any(named: 'bytes'))).called(1);
+      verify(
+        () => mockFileExportHelper.saveExcelFile(bytes: any(named: 'bytes')),
+      ).called(1);
       expect(find.text('Excel file exported successfully'), findsOneWidget);
     });
 
-    testWidgets('8. Export loading state shows circular indicator in AppBar', (tester) async {
+    testWidgets('10. Export loading state shows circular indicator in AppBar', (
+      tester,
+    ) async {
       when(() => mockAdminLogProvider.isExporting).thenReturn(true);
 
       await tester.pumpWidget(buildTestWidget());
@@ -191,9 +241,13 @@ void main() {
       expect(find.byTooltip('Export Excel'), findsNothing);
     });
 
-    testWidgets('9. Export error state shows error SnackBar', (tester) async {
-      when(() => mockAdminLogProvider.exportLogsExcel()).thenAnswer((_) async => null);
-      when(() => mockAdminLogProvider.exportErrorMessage).thenReturn('Server failed to generate export');
+    testWidgets('11. Export error state shows error SnackBar', (tester) async {
+      when(
+        () => mockAdminLogProvider.exportLogsExcel(),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockAdminLogProvider.exportErrorMessage,
+      ).thenReturn('Server failed to generate export');
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
@@ -205,9 +259,12 @@ void main() {
       expect(find.text('Server failed to generate export'), findsOneWidget);
     });
 
-    testWidgets('10. File save errors show safe export failure SnackBar', (tester) async {
-      when(() => mockFileExportHelper.saveExcelFile(bytes: any(named: 'bytes')))
-          .thenThrow(Exception('MediaStore failure'));
+    testWidgets('file save errors show a safe export failure SnackBar', (
+      tester,
+    ) async {
+      when(
+        () => mockFileExportHelper.saveExcelFile(bytes: any(named: 'bytes')),
+      ).thenThrow(Exception('MediaStore failure'));
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
@@ -218,9 +275,13 @@ void main() {
       expect(find.text('Failed to export Excel file'), findsOneWidget);
     });
 
-    testWidgets('11. Rapid export taps trigger only one export request', (tester) async {
+    testWidgets('rapid export taps trigger only one export request', (
+      tester,
+    ) async {
       final exportCompleter = Completer<Uint8List?>();
-      when(() => mockAdminLogProvider.exportLogsExcel()).thenAnswer((_) => exportCompleter.future);
+      when(
+        () => mockAdminLogProvider.exportLogsExcel(),
+      ).thenAnswer((_) => exportCompleter.future);
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();

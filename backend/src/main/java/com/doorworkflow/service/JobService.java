@@ -30,6 +30,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import com.doorworkflow.service.PushNotificationService;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -46,19 +47,23 @@ public class JobService {
     private final NotificationRepository notificationRepository;
     private final ProcessStepRepository processStepRepository;
     private final UserRepository userRepository;
+    private final PushNotificationService pushNotificationService;
+
 
     public JobService(JobRepository jobRepository,
                       JobStepRepository jobStepRepository,
                       JobStepHistoryRepository jobStepHistoryRepository,
                       NotificationRepository notificationRepository,
                       ProcessStepRepository processStepRepository,
-                      UserRepository userRepository) {
+                      UserRepository userRepository,
+                      PushNotificationService pushNotificationService) {
         this.jobRepository = jobRepository;
         this.jobStepRepository = jobStepRepository;
         this.jobStepHistoryRepository = jobStepHistoryRepository;
         this.notificationRepository = notificationRepository;
         this.processStepRepository = processStepRepository;
         this.userRepository = userRepository;
+        this.pushNotificationService = pushNotificationService;
     }
 
     private User getAuthenticatedManager(String accessDeniedMessage) {
@@ -114,6 +119,17 @@ public class JobService {
         Job job = Job.builder()
                 .jobNumber(jobNumber)
                 .companyName(companyName)
+                .fr(request.fr() != null ? request.fr().trim() : null)
+                .deliveryAddress(request.deliveryAddress() != null ? request.deliveryAddress().trim() : null)
+                .poNo(request.poNo() != null ? request.poNo().trim() : null)
+                .gstNo(request.gstNo() != null ? request.gstNo().trim() : null)
+                .poDate(request.poDate())
+                .orderDate(request.orderDate())
+                .deliveryDate(request.deliveryDate())
+                .doors(request.doors() != null ? request.doors().trim() : null)
+                .doorLeaf(request.doorLeaf() != null ? request.doorLeaf().trim() : null)
+                .colourShade(request.colourShade() != null ? request.colourShade().trim() : null)
+                .vehicleDetails(request.vehicleDetails() != null ? request.vehicleDetails().trim() : null)
                 .status(JobStatus.IN_PROGRESS)
                 .createdBy(authenticatedUser)
                 .completedAt(null)
@@ -293,6 +309,10 @@ public class JobService {
             job.setStatus(JobStatus.WORK_DONE);
             job.setCompletedAt(now);
             jobRepository.save(job);
+            // Send push notification for Bending step completion
+            if ("Bending".equalsIgnoreCase(step.getStepName())) {
+                pushNotificationService.sendBendingCompletedNotification(job);
+            }
         }
 
         // Record history entry
@@ -517,6 +537,17 @@ public class JobService {
                 job.getUpdatedAt(),
                 job.getCompletedAt(),
                 job.getChalanNumber(),
+                job.getFr(),
+                job.getDeliveryAddress(),
+                job.getPoNo(),
+                job.getGstNo(),
+                job.getPoDate(),
+                job.getOrderDate(),
+                job.getDeliveryDate(),
+                job.getDoors(),
+                job.getDoorLeaf(),
+                job.getColourShade(),
+                job.getVehicleDetails(),
                 stepResponses
         );
     }

@@ -123,4 +123,27 @@ class AdminUserProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  /// Resets a user's password.
+  Future<bool> resetPassword({
+    required String id,
+    required String newPassword,
+  }) async {
+    _isUpdating = true;
+    _updateErrorMessage = null;
+    notifyListeners();
+    try {
+      await _userService.resetPassword(id: id, newPassword: newPassword);
+      return true;
+    } on ApiException catch (e) {
+      _updateErrorMessage = e.message;
+      return false;
+    } catch (_) {
+      _updateErrorMessage = 'An unexpected error occurred.';
+      return false;
+    } finally {
+      _isUpdating = false;
+      notifyListeners();
+    }
+  }
 }

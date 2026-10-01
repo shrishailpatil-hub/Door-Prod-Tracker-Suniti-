@@ -197,6 +197,8 @@ class _ManagerJobDetailScreenState extends State<ManagerJobDetailScreen> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 16),
+                _buildJobInfoCard(job),
                 const SizedBox(height: 12),
                 Center(
                   child: OutlinedButton.icon(
@@ -355,6 +357,70 @@ class _ManagerJobDetailScreenState extends State<ManagerJobDetailScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildJobInfoCard(Job job) {
+    return GlassCard(
+      color: Colors.white.withValues(alpha: 0.7),
+      borderColor: Colors.white.withValues(alpha: 0.8),
+      padding: const EdgeInsets.all(20.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Job Information',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.primaryBlue,
+            ),
+          ),
+          const SizedBox(height: 12),
+          _buildInfoRow('FR', job.fr),
+          _buildInfoRow('Delivery Address', job.deliveryAddress),
+          _buildInfoRow('PO No.', job.poNo),
+          _buildInfoRow('GST No.', job.gstNo),
+          _buildInfoRow('PO Date', job.poDate?.toString().split(' ').first),
+          _buildInfoRow('Order Date', job.orderDate?.toString().split(' ').first),
+          _buildInfoRow('Delivery Date', job.deliveryDate?.toString().split(' ').first),
+          _buildInfoRow('Doors', job.doors),
+          _buildInfoRow('Door Leaf', job.doorLeaf),
+          _buildInfoRow('Colour Shade', job.colourShade),
+          _buildInfoRow('Vehicle Details', job.vehicleDetails),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String? value) {
+    if (value == null || value.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textMuted,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontWeight: FontWeight.w500,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

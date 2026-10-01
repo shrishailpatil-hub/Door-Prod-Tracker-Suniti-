@@ -359,4 +359,31 @@ class AdminUserControllerIntegrationTest {
         ResponseEntity<String> restored = restTemplate.exchange(baseUrl() + "/manager/test", HttpMethod.GET, new HttpEntity<>(hdr), String.class);
         assertThat(restored.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
+
+    @Test
+    @DisplayName("21. Admin can reset password")
+    void adminCanResetPassword() {
+        var create = new CreateUserRequest("Reset", "reset@example.com", "passReset123", UserRole.WORKER);
+        UUID id = restTemplate.exchange(baseUrl() + "/admin/users", HttpMethod.POST, new HttpEntity<>(create, authHeaders(adminToken)), UserResponse.class).getBody().id();
+        var reset = new com.doorworkflow.dto.request.ResetPasswordRequest("newPass123");
+        ResponseEntity<UserResponse> resp = restTemplate.exchange(baseUrl() + "/admin/users/" + id + "/reset-password", HttpMethod.PATCH, new HttpEntity<>(reset, authHeaders(adminToken)), UserResponse.class);
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
+        
+        // Log in with new password
+        String token = login("reset@example.com", "newPass123");
+        assertThat(token).isNotBlank();
+
+        // Old password shouldn't work
+        var loginReq = Map.of("email", "reset@example.com", "password", "passReset123");
+        ResponseEntity<Map> oldPassResp = restTemplate.postForEntity(baseUrl() + "/auth/login", loginReq, Map.class);
+        assertThat(oldPassResp.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    @DisplayName("22. Admin cannot reset password for unknown user")
+    void adminCannotResetPasswordForUnknownUser() {
+        var reset = new com.doorworkflow.dto.request.ResetPasswordRequest("newPass123");
+        ResponseEntity<String> resp = restTemplate.exchange(baseUrl() + "/admin/users/" + UUID.randomUUID() + "/reset-password", HttpMethod.PATCH, new HttpEntity<>(reset, authHeaders(adminToken)), String.class);
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
 }

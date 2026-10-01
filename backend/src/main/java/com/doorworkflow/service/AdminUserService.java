@@ -90,6 +90,14 @@ public class AdminUserService {
         return mapToResponse(saved);
     }
 
+    public UserResponse resetPassword(UUID id, com.doorworkflow.dto.request.ResetPasswordRequest request) {
+        User target = userRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "User not found"));
+        target.setPassword(passwordEncoder.encode(request.password()));
+        User saved = userRepository.save(target);
+        return mapToResponse(saved);
+    }
+
     private UserResponse mapToResponse(User user) {
         return new UserResponse(
                 user.getId(),

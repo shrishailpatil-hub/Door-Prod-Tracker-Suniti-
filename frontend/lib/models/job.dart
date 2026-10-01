@@ -11,6 +11,17 @@ class Job {
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? completedAt;
+  final String? fr;
+  final String? deliveryAddress;
+  final String? poNo;
+  final String? gstNo;
+  final DateTime? poDate;
+  final DateTime? orderDate;
+  final DateTime? deliveryDate;
+  final String? doors;
+  final String? doorLeaf;
+  final String? colourShade;
+  final String? vehicleDetails;
   final List<JobStep> steps;
 
   Job({
@@ -23,6 +34,17 @@ class Job {
     required this.createdAt,
     required this.updatedAt,
     this.completedAt,
+    this.fr,
+    this.deliveryAddress,
+    this.poNo,
+    this.gstNo,
+    this.poDate,
+    this.orderDate,
+    this.deliveryDate,
+    this.doors,
+    this.doorLeaf,
+    this.colourShade,
+    this.vehicleDetails,
     required this.steps,
   });
 
@@ -32,12 +54,25 @@ class Job {
     companyName: json['companyName'] as String,
     status: json['status'] as String,
     chalanNumber: json['chalanNumber'] as String?,
-    createdBy: json['createdBy'] as String,
+    createdBy: json['createdBy'] as String? ?? 'Unknown',
     createdAt: DateTime.parse(json['createdAt'] as String),
-    updatedAt: DateTime.parse(json['updatedAt'] as String),
+    updatedAt: json['updatedAt'] != null 
+        ? DateTime.parse(json['updatedAt'] as String) 
+        : DateTime.parse(json['createdAt'] as String),
     completedAt: json['completedAt'] != null
         ? DateTime.parse(json['completedAt'] as String)
         : null,
+    fr: json['fr'] as String?,
+    deliveryAddress: json['deliveryAddress'] as String?,
+    poNo: json['poNo'] as String?,
+    gstNo: json['gstNo'] as String?,
+    poDate: json['poDate'] != null ? DateTime.parse(json['poDate'] as String) : null,
+    orderDate: json['orderDate'] != null ? DateTime.parse(json['orderDate'] as String) : null,
+    deliveryDate: json['deliveryDate'] != null ? DateTime.parse(json['deliveryDate'] as String) : null,
+    doors: json['doors'] as String?,
+    doorLeaf: json['doorLeaf'] as String?,
+    colourShade: json['colourShade'] as String?,
+    vehicleDetails: json['vehicleDetails'] as String?,
     steps: (json['steps'] as List<dynamic>? ?? [])
         .map((e) => JobStep.fromJson(e as Map<String, dynamic>))
         .toList(),

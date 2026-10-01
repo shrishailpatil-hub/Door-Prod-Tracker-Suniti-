@@ -23,14 +23,38 @@ class JobService {
         .toList();
   }
 
-  /// Creates a manufacturing job for the authenticated manager.
   Future<Job> createManagerJob({
     required String jobNumber,
     required String companyName,
+    String? fr,
+    String? deliveryAddress,
+    String? poNo,
+    String? gstNo,
+    DateTime? poDate,
+    DateTime? orderDate,
+    DateTime? deliveryDate,
+    String? doors,
+    String? doorLeaf,
+    String? colourShade,
+    String? vehicleDetails,
   }) async {
     final response = await _apiClient.post(
       ApiConfig.managerJobsEndpoint,
-      body: {'jobNumber': jobNumber, 'companyName': companyName},
+      body: {
+        'jobNumber': jobNumber,
+        'companyName': companyName,
+        if (fr != null) 'fr': fr,
+        if (deliveryAddress != null) 'deliveryAddress': deliveryAddress,
+        if (poNo != null) 'poNo': poNo,
+        if (gstNo != null) 'gstNo': gstNo,
+        if (poDate != null) 'poDate': poDate.toIso8601String().split('T').first,
+        if (orderDate != null) 'orderDate': orderDate.toIso8601String().split('T').first,
+        if (deliveryDate != null) 'deliveryDate': deliveryDate.toIso8601String().split('T').first,
+        if (doors != null) 'doors': doors,
+        if (doorLeaf != null) 'doorLeaf': doorLeaf,
+        if (colourShade != null) 'colourShade': colourShade,
+        if (vehicleDetails != null) 'vehicleDetails': vehicleDetails,
+      },
     );
     if (response is! Map) {
       throw const ApiException(

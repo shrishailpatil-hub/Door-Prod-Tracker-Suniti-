@@ -12,4 +12,5 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     boolean existsByEmail(String email);
     boolean existsByIsActive(Boolean isActive);
     List<User> findByRoleAndIsActive(com.doorworkflow.enums.UserRole role, Boolean isActive);
+    List<User> findByRoleInAndIsActive(List<com.doorworkflow.enums.UserRole> roles, Boolean isActive);
 }

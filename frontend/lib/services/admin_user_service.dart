@@ -70,4 +70,15 @@ class AdminUserService {
     }
     return AppUser.fromJson(response);
   }
+
+  /// Resets a user's password.
+  Future<void> resetPassword({
+    required String id,
+    required String newPassword,
+  }) async {
+    final body = {
+      'password': newPassword,
+    };
+    await _apiClient.patch('${ApiConfig.adminUsersEndpoint}/$id/reset-password', body: body);
+  }
 }

@@ -10,6 +10,18 @@ public record CreateJobRequest(
 
         @NotBlank(message = "Company name is required")
         @Size(max = 255, message = "Company name must be at most 255 characters")
-        String companyName
+        String companyName,
+
+        String fr,
+        String deliveryAddress,
+        String poNo,
+        String gstNo,
+        java.time.LocalDate poDate,
+        java.time.LocalDate orderDate,
+        java.time.LocalDate deliveryDate,
+        String doors,
+        String doorLeaf,
+        String colourShade,
+        String vehicleDetails
 ) {
 }

@@ -140,7 +140,7 @@ class ManagerJobControllerIntegrationTest {
     @Test
     @DisplayName("1. MANAGER can create a job -> 200 OK")
     void managerCanCreateJob() {
-        CreateJobRequest request = new CreateJobRequest("JOB-100", "Acme Door Co");
+        CreateJobRequest request = new CreateJobRequest("JOB-100", "Acme Door Co", null, null, null, null, null, null, null, null, null, null, null);
         HttpEntity<CreateJobRequest> entity = new HttpEntity<>(request, authHeaders(managerToken));
         ResponseEntity<JobResponse> resp = restTemplate.exchange(baseUrl() + "/manager/jobs", HttpMethod.POST, entity, JobResponse.class);
 
@@ -159,9 +159,9 @@ class ManagerJobControllerIntegrationTest {
     void managerCanListJobs() {
         // Create 2 jobs
         restTemplate.exchange(baseUrl() + "/manager/jobs", HttpMethod.POST,
-                new HttpEntity<>(new CreateJobRequest("JOB-201", "Co 1"), authHeaders(managerToken)), JobResponse.class);
+                new HttpEntity<>(new CreateJobRequest("JOB-201", "Co 1", null, null, null, null, null, null, null, null, null, null, null), authHeaders(managerToken)), JobResponse.class);
         restTemplate.exchange(baseUrl() + "/manager/jobs", HttpMethod.POST,
-                new HttpEntity<>(new CreateJobRequest("JOB-202", "Co 2"), authHeaders(managerToken)), JobResponse.class);
+                new HttpEntity<>(new CreateJobRequest("JOB-202", "Co 2", null, null, null, null, null, null, null, null, null, null, null), authHeaders(managerToken)), JobResponse.class);
 
         ResponseEntity<List<JobResponse>> resp = restTemplate.exchange(
                 baseUrl() + "/manager/jobs",
@@ -180,7 +180,7 @@ class ManagerJobControllerIntegrationTest {
     @DisplayName("3. MANAGER can get a job by ID")
     void managerCanGetJobById() {
         ResponseEntity<JobResponse> created = restTemplate.exchange(baseUrl() + "/manager/jobs", HttpMethod.POST,
-                new HttpEntity<>(new CreateJobRequest("JOB-301", "Single Co"), authHeaders(managerToken)), JobResponse.class);
+                new HttpEntity<>(new CreateJobRequest("JOB-301", "Single Co", null, null, null, null, null, null, null, null, null, null, null), authHeaders(managerToken)), JobResponse.class);
         UUID jobId = created.getBody().id();
 
         ResponseEntity<JobResponse> resp = restTemplate.exchange(
@@ -200,7 +200,7 @@ class ManagerJobControllerIntegrationTest {
     @Test
     @DisplayName("4. ADMIN receives 403 on manager jobs endpoints")
     void adminReceivesForbidden() {
-        CreateJobRequest req = new CreateJobRequest("JOB-401", "Forbidden Co");
+        CreateJobRequest req = new CreateJobRequest("JOB-401", "Forbidden Co", null, null, null, null, null, null, null, null, null, null, null);
         ResponseEntity<String> postResp = restTemplate.exchange(
                 baseUrl() + "/manager/jobs",
                 HttpMethod.POST,
@@ -221,7 +221,7 @@ class ManagerJobControllerIntegrationTest {
     @Test
     @DisplayName("5. WORKER receives 403 on manager jobs endpoints")
     void workerReceivesForbidden() {
-        CreateJobRequest req = new CreateJobRequest("JOB-501", "Worker Co");
+        CreateJobRequest req = new CreateJobRequest("JOB-501", "Worker Co", null, null, null, null, null, null, null, null, null, null, null);
         ResponseEntity<String> postResp = restTemplate.exchange(
                 baseUrl() + "/manager/jobs",
                 HttpMethod.POST,
@@ -242,7 +242,7 @@ class ManagerJobControllerIntegrationTest {
     @Test
     @DisplayName("6. Unauthenticated request receives 401")
     void unauthenticatedReceivesUnauthorized() {
-        CreateJobRequest req = new CreateJobRequest("JOB-601", "Anon Co");
+        CreateJobRequest req = new CreateJobRequest("JOB-601", "Anon Co", null, null, null, null, null, null, null, null, null, null, null);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
@@ -267,7 +267,7 @@ class ManagerJobControllerIntegrationTest {
     @DisplayName("7. Invalid create request receives 400")
     void invalidCreateRequestReceivesBadRequest() {
         // Blank jobNumber
-        CreateJobRequest badReq = new CreateJobRequest("", "Valid Company");
+        CreateJobRequest badReq = new CreateJobRequest("", "Valid Company", null, null, null, null, null, null, null, null, null, null, null);
         ResponseEntity<String> resp = restTemplate.exchange(
                 baseUrl() + "/manager/jobs",
                 HttpMethod.POST,
@@ -277,7 +277,7 @@ class ManagerJobControllerIntegrationTest {
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 
         // Blank companyName
-        CreateJobRequest badReq2 = new CreateJobRequest("JOB-701", "   ");
+        CreateJobRequest badReq2 = new CreateJobRequest("JOB-701", "   ", null, null, null, null, null, null, null, null, null, null, null);
         ResponseEntity<String> resp2 = restTemplate.exchange(
                 baseUrl() + "/manager/jobs",
                 HttpMethod.POST,
@@ -290,11 +290,11 @@ class ManagerJobControllerIntegrationTest {
     @Test
     @DisplayName("8. Duplicate job number receives 409")
     void duplicateJobNumberReceivesConflict() {
-        CreateJobRequest req1 = new CreateJobRequest("JOB-DUP-1", "Company One");
+        CreateJobRequest req1 = new CreateJobRequest("JOB-DUP-1", "Company One", null, null, null, null, null, null, null, null, null, null, null);
         restTemplate.exchange(baseUrl() + "/manager/jobs", HttpMethod.POST,
                 new HttpEntity<>(req1, authHeaders(managerToken)), JobResponse.class);
 
-        CreateJobRequest req2 = new CreateJobRequest("JOB-DUP-1", "Company Two");
+        CreateJobRequest req2 = new CreateJobRequest("JOB-DUP-1", "Company Two", null, null, null, null, null, null, null, null, null, null, null);
         ResponseEntity<String> resp = restTemplate.exchange(
                 baseUrl() + "/manager/jobs",
                 HttpMethod.POST,
@@ -319,7 +319,7 @@ class ManagerJobControllerIntegrationTest {
     @Test
     @DisplayName("10. createdBy is the authenticated manager, not client-controlled")
     void createdByIsAuthenticatedManager() {
-        CreateJobRequest req = new CreateJobRequest("JOB-CREATOR", "Test Co");
+        CreateJobRequest req = new CreateJobRequest("JOB-CREATOR", "Test Co", null, null, null, null, null, null, null, null, null, null, null);
         ResponseEntity<JobResponse> resp = restTemplate.exchange(
                 baseUrl() + "/manager/jobs",
                 HttpMethod.POST,
@@ -339,7 +339,7 @@ class ManagerJobControllerIntegrationTest {
         ProcessStep s3 = ProcessStep.builder().name("Welding").stepOrder(2).isActive(true).build();
         processStepRepository.saveAll(List.of(s1, s2, s3));
 
-        CreateJobRequest req = new CreateJobRequest("JOB-SNAPSHOT-ACTIVE", "Snapshot Corp");
+        CreateJobRequest req = new CreateJobRequest("JOB-SNAPSHOT-ACTIVE", "Snapshot Corp", null, null, null, null, null, null, null, null, null, null, null);
         ResponseEntity<JobResponse> resp = restTemplate.exchange(
                 baseUrl() + "/manager/jobs",
                 HttpMethod.POST,
@@ -365,7 +365,7 @@ class ManagerJobControllerIntegrationTest {
         processStepRepository.saveAll(List.of(s1, s2));
 
         // Create Job #1704
-        CreateJobRequest req = new CreateJobRequest("JOB-1704", "Independent Co");
+        CreateJobRequest req = new CreateJobRequest("JOB-1704", "Independent Co", null, null, null, null, null, null, null, null, null, null, null);
         ResponseEntity<JobResponse> createResp = restTemplate.exchange(
                 baseUrl() + "/manager/jobs",
                 HttpMethod.POST,
@@ -404,12 +404,12 @@ class ManagerJobControllerIntegrationTest {
     @DisplayName("13. List endpoint returns jobs in a deterministic order (newest createdAt first)")
     void listEndpointReturnsJobsInDeterministicOrder() throws InterruptedException {
         restTemplate.exchange(baseUrl() + "/manager/jobs", HttpMethod.POST,
-                new HttpEntity<>(new CreateJobRequest("JOB-FIRST", "Co A"), authHeaders(managerToken)), JobResponse.class);
+                new HttpEntity<>(new CreateJobRequest("JOB-FIRST", "Co A", null, null, null, null, null, null, null, null, null, null, null), authHeaders(managerToken)), JobResponse.class);
 
         Thread.sleep(50); // slight delay to guarantee distinct createdAt timestamps
 
         restTemplate.exchange(baseUrl() + "/manager/jobs", HttpMethod.POST,
-                new HttpEntity<>(new CreateJobRequest("JOB-SECOND", "Co B"), authHeaders(managerToken)), JobResponse.class);
+                new HttpEntity<>(new CreateJobRequest("JOB-SECOND", "Co B", null, null, null, null, null, null, null, null, null, null, null), authHeaders(managerToken)), JobResponse.class);
 
         ResponseEntity<List<JobResponse>> resp = restTemplate.exchange(
                 baseUrl() + "/manager/jobs",
@@ -430,7 +430,7 @@ class ManagerJobControllerIntegrationTest {
     @DisplayName("14. MANAGER can cancel IN_PROGRESS job -> returns CANCELLED")
     void managerCanCancelInProgressJob() {
         ResponseEntity<JobResponse> created = restTemplate.exchange(baseUrl() + "/manager/jobs", HttpMethod.POST,
-                new HttpEntity<>(new CreateJobRequest("JOB-CANCEL-1", "Co"), authHeaders(managerToken)), JobResponse.class);
+                new HttpEntity<>(new CreateJobRequest("JOB-CANCEL-1", "Co", null, null, null, null, null, null, null, null, null, null, null), authHeaders(managerToken)), JobResponse.class);
         UUID jobId = created.getBody().id();
 
         ResponseEntity<JobResponse> resp = restTemplate.exchange(
@@ -448,7 +448,7 @@ class ManagerJobControllerIntegrationTest {
     @DisplayName("15. Cannot cancel already CANCELLED job -> 400 Bad Request")
     void cannotCancelAlreadyCancelledJob() {
         ResponseEntity<JobResponse> created = restTemplate.exchange(baseUrl() + "/manager/jobs", HttpMethod.POST,
-                new HttpEntity<>(new CreateJobRequest("JOB-CANCEL-2", "Co"), authHeaders(managerToken)), JobResponse.class);
+                new HttpEntity<>(new CreateJobRequest("JOB-CANCEL-2", "Co", null, null, null, null, null, null, null, null, null, null, null), authHeaders(managerToken)), JobResponse.class);
         UUID jobId = created.getBody().id();
 
         // First cancel
@@ -470,7 +470,7 @@ class ManagerJobControllerIntegrationTest {
     @DisplayName("16. Cannot cancel WORK_DONE job -> 400 Bad Request")
     void cannotCancelWorkDoneJob() {
         ResponseEntity<JobResponse> created = restTemplate.exchange(baseUrl() + "/manager/jobs", HttpMethod.POST,
-                new HttpEntity<>(new CreateJobRequest("JOB-CANCEL-3", "Co"), authHeaders(managerToken)), JobResponse.class);
+                new HttpEntity<>(new CreateJobRequest("JOB-CANCEL-3", "Co", null, null, null, null, null, null, null, null, null, null, null), authHeaders(managerToken)), JobResponse.class);
         UUID jobId = created.getBody().id();
 
         // Simulate job completed
@@ -509,7 +509,7 @@ class ManagerJobControllerIntegrationTest {
         processStepRepository.saveAll(List.of(p1, p2, p3));
 
         ResponseEntity<JobResponse> created = restTemplate.exchange(baseUrl() + "/manager/jobs", HttpMethod.POST,
-                new HttpEntity<>(new CreateJobRequest("JOB-REOPEN-1", "Co"), authHeaders(managerToken)), JobResponse.class);
+                new HttpEntity<>(new CreateJobRequest("JOB-REOPEN-1", "Co", null, null, null, null, null, null, null, null, null, null, null), authHeaders(managerToken)), JobResponse.class);
         UUID jobId = created.getBody().id();
 
         // Mark all steps COMPLETED and job WORK_DONE
@@ -569,7 +569,7 @@ class ManagerJobControllerIntegrationTest {
     @DisplayName("19. Reopen requires valid stepId -> 400 when null")
     void reopenRequiresStepId() {
         ResponseEntity<JobResponse> created = restTemplate.exchange(baseUrl() + "/manager/jobs", HttpMethod.POST,
-                new HttpEntity<>(new CreateJobRequest("JOB-REOPEN-2", "Co"), authHeaders(managerToken)), JobResponse.class);
+                new HttpEntity<>(new CreateJobRequest("JOB-REOPEN-2", "Co", null, null, null, null, null, null, null, null, null, null, null), authHeaders(managerToken)), JobResponse.class);
         UUID jobId = created.getBody().id();
 
         String bodyWithNull = "{\"stepId\": null}";
@@ -588,7 +588,7 @@ class ManagerJobControllerIntegrationTest {
     @DisplayName("20. Supplied stepId must belong to the job -> 400 Bad Request")
     void suppliedStepIdMustBelongToJob() {
         ResponseEntity<JobResponse> created = restTemplate.exchange(baseUrl() + "/manager/jobs", HttpMethod.POST,
-                new HttpEntity<>(new CreateJobRequest("JOB-REOPEN-3", "Co"), authHeaders(managerToken)), JobResponse.class);
+                new HttpEntity<>(new CreateJobRequest("JOB-REOPEN-3", "Co", null, null, null, null, null, null, null, null, null, null, null), authHeaders(managerToken)), JobResponse.class);
         UUID jobId = created.getBody().id();
 
         Job job = jobRepository.findById(jobId).orElseThrow();
@@ -613,7 +613,7 @@ class ManagerJobControllerIntegrationTest {
         processStepRepository.save(p1);
 
         ResponseEntity<JobResponse> created = restTemplate.exchange(baseUrl() + "/manager/jobs", HttpMethod.POST,
-                new HttpEntity<>(new CreateJobRequest("JOB-REOPEN-4", "Co"), authHeaders(managerToken)), JobResponse.class);
+                new HttpEntity<>(new CreateJobRequest("JOB-REOPEN-4", "Co", null, null, null, null, null, null, null, null, null, null, null), authHeaders(managerToken)), JobResponse.class);
         UUID jobId = created.getBody().id();
         UUID stepId = created.getBody().steps().get(0).id();
 
@@ -657,7 +657,7 @@ class ManagerJobControllerIntegrationTest {
     @DisplayName("23. Security: ADMIN and WORKER receive 403 on cancel and reopen; Unauthenticated receives 401")
     void securityForCancelAndReopen() {
         ResponseEntity<JobResponse> created = restTemplate.exchange(baseUrl() + "/manager/jobs", HttpMethod.POST,
-                new HttpEntity<>(new CreateJobRequest("JOB-SEC-1", "Co"), authHeaders(managerToken)), JobResponse.class);
+                new HttpEntity<>(new CreateJobRequest("JOB-SEC-1", "Co", null, null, null, null, null, null, null, null, null, null, null), authHeaders(managerToken)), JobResponse.class);
         UUID jobId = created.getBody().id();
         ReopenJobRequest reopenReq = new ReopenJobRequest(UUID.randomUUID());
 
@@ -689,7 +689,7 @@ class ManagerJobControllerIntegrationTest {
         processStepRepository.save(p1);
 
         ResponseEntity<JobResponse> created = restTemplate.exchange(baseUrl() + "/manager/jobs", HttpMethod.POST,
-                new HttpEntity<>(new CreateJobRequest("JOB-OPT-1", "Co"), authHeaders(managerToken)), JobResponse.class);
+                new HttpEntity<>(new CreateJobRequest("JOB-OPT-1", "Co", null, null, null, null, null, null, null, null, null, null, null), authHeaders(managerToken)), JobResponse.class);
         UUID jobId = created.getBody().id();
 
         JobStep step = jobStepRepository.findByJobIdOrderByStepOrderAsc(jobId).get(0);
@@ -704,7 +704,7 @@ class ManagerJobControllerIntegrationTest {
         processStepRepository.save(p1);
 
         ResponseEntity<JobResponse> created = restTemplate.exchange(baseUrl() + "/manager/jobs", HttpMethod.POST,
-                new HttpEntity<>(new CreateJobRequest("JOB-LOG-1", "Co"), authHeaders(managerToken)), JobResponse.class);
+                new HttpEntity<>(new CreateJobRequest("JOB-LOG-1", "Co", null, null, null, null, null, null, null, null, null, null, null), authHeaders(managerToken)), JobResponse.class);
         UUID jobId = created.getBody().id();
         UUID stepId = created.getBody().steps().get(0).id();
 
@@ -758,7 +758,7 @@ class ManagerJobControllerIntegrationTest {
     @DisplayName("27. Job logs security: ADMIN and WORKER receive 403; Unauthenticated receives 401")
     void jobLogsSecurity() {
         ResponseEntity<JobResponse> created = restTemplate.exchange(baseUrl() + "/manager/jobs", HttpMethod.POST,
-                new HttpEntity<>(new CreateJobRequest("JOB-LOG-SEC", "Co"), authHeaders(managerToken)), JobResponse.class);
+                new HttpEntity<>(new CreateJobRequest("JOB-LOG-SEC", "Co", null, null, null, null, null, null, null, null, null, null, null), authHeaders(managerToken)), JobResponse.class);
         UUID jobId = created.getBody().id();
 
         // ADMIN -> 403

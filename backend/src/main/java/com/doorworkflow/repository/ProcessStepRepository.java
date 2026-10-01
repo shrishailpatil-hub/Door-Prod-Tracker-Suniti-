@@ -9,6 +9,7 @@ import java.util.UUID;
 
 public interface ProcessStepRepository extends JpaRepository<ProcessStep, UUID> {
     List<ProcessStep> findByIsActive(Boolean isActive);
+    List<ProcessStep> findByIsActiveTrueOrderByStepOrderAsc();
     List<ProcessStep> findAllByOrderByStepOrderAsc();
     Optional<ProcessStep> findById(UUID id);
 }

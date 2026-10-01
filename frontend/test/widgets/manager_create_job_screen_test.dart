@@ -86,12 +86,21 @@ void main() {
     tester,
   ) async {
     final completer = Completer<Job>();
-    when(
-      () => service.createManagerJob(
-        jobNumber: 'JOB-900',
-        companyName: 'Acme Doors',
-      ),
-    ).thenAnswer((_) => completer.future);
+        when(() => service.createManagerJob(
+          jobNumber: any(named: 'jobNumber'),
+          companyName: any(named: 'companyName'),
+          fr: any(named: 'fr'),
+          deliveryAddress: any(named: 'deliveryAddress'),
+          poNo: any(named: 'poNo'),
+          gstNo: any(named: 'gstNo'),
+          poDate: any(named: 'poDate'),
+          orderDate: any(named: 'orderDate'),
+          deliveryDate: any(named: 'deliveryDate'),
+          doors: any(named: 'doors'),
+          doorLeaf: any(named: 'doorLeaf'),
+          colourShade: any(named: 'colourShade'),
+          vehicleDetails: any(named: 'vehicleDetails'),
+        )).thenAnswer((_) async => completer.future);
     when(() => service.getManagerJobs()).thenAnswer((_) async => [createdJob]);
     await tester.pumpWidget(buildCreateScreen());
     await fillValidForm(tester);
@@ -149,12 +158,21 @@ void main() {
       fetchCount++;
       return fetchCount == 1 ? [] : [createdJob];
     });
-    when(
-      () => service.createManagerJob(
-        jobNumber: 'JOB-900',
-        companyName: 'Acme Doors',
-      ),
-    ).thenAnswer((_) async => createdJob);
+    when(() => service.createManagerJob(
+      jobNumber: any(named: 'jobNumber'),
+      companyName: any(named: 'companyName'),
+      fr: any(named: 'fr'),
+      deliveryAddress: any(named: 'deliveryAddress'),
+      poNo: any(named: 'poNo'),
+      gstNo: any(named: 'gstNo'),
+      poDate: any(named: 'poDate'),
+      orderDate: any(named: 'orderDate'),
+      deliveryDate: any(named: 'deliveryDate'),
+      doors: any(named: 'doors'),
+      doorLeaf: any(named: 'doorLeaf'),
+      colourShade: any(named: 'colourShade'),
+      vehicleDetails: any(named: 'vehicleDetails'),
+    )).thenAnswer((_) async => createdJob);
     final auth = MockAuthProvider();
     when(() => auth.logout()).thenAnswer((_) async {});
 

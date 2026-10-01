@@ -55,4 +55,11 @@ public class AdminUserController {
         UserResponse updated = adminUserService.updateStatus(id, request);
         return ResponseEntity.ok(updated);
     }
+
+    @PatchMapping("/{id}/reset-password")
+    public ResponseEntity<UserResponse> resetPassword(@PathVariable UUID id,
+                                                      @Valid @RequestBody com.doorworkflow.dto.request.ResetPasswordRequest request) {
+        UserResponse updated = adminUserService.resetPassword(id, request);
+        return ResponseEntity.ok(updated);
+    }
 }

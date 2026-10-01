@@ -4,6 +4,7 @@ import '../core/config/api_config.dart';
 import '../core/errors/api_exception.dart';
 import '../core/network/api_client.dart';
 import '../core/storage/secure_storage_service.dart';
+import '../services/fcm_service.dart';
 import '../models/auth/login_response.dart';
 import '../models/auth/user_role.dart';
 import '../models/auth/user_session.dart';
@@ -54,6 +55,9 @@ class AuthProvider extends ChangeNotifier {
           name: name,
           role: role,
         );
+        // Initialize Firebase Cloud Messaging if authenticated
+        FcmService.initialize(_apiClient);
+
       } else {
         _session = null;
       }
@@ -103,8 +107,12 @@ class AuthProvider extends ChangeNotifier {
         role: loginResponse.role,
       );
 
+      // Initialize Firebase Cloud Messaging after successful authentication.
       _isLoading = false;
       notifyListeners();
+
+      FcmService.initialize(_apiClient);
+
       return true;
     } on ApiException catch (e) {
       _errorMessage = e.message;

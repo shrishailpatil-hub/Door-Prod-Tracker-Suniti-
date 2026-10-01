@@ -214,16 +214,15 @@ class _ManagerJobCard extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Text(
-                              job.jobNumber,
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: -0.5,
-                              ),
-                            ),
-                          ),
+                    Text(
+                      job.jobNumber,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
                           const SizedBox(width: 8),
+
                           // Status chip style
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

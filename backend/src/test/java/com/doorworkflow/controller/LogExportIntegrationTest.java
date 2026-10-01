@@ -4,6 +4,7 @@ import com.doorworkflow.config.TestRestTemplateConfig;
 import com.doorworkflow.entity.Job;
 import com.doorworkflow.entity.JobStep;
 import com.doorworkflow.entity.JobStepHistory;
+import com.doorworkflow.entity.ProcessStep;
 import com.doorworkflow.entity.User;
 import com.doorworkflow.enums.JobStatus;
 import com.doorworkflow.enums.JobStepAction;
@@ -26,12 +27,14 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.*;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -70,9 +73,6 @@ class LogExportIntegrationTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
-
     private String adminToken;
     private String managerToken;
     private String workerToken;
@@ -108,7 +108,6 @@ class LogExportIntegrationTest {
         processStepRepository.deleteAll();
         userRepository.deleteAll();
 
-        // Admin
         adminUser = User.builder()
                 .name("Admin Charlie")
                 .email("admin@test.local")
@@ -119,7 +118,6 @@ class LogExportIntegrationTest {
         userRepository.save(adminUser);
         adminToken = login("admin@test.local", "admin123");
 
-        // Manager
         managerUser = User.builder()
                 .name("Manager Alice")
                 .email("manager@test.local")
@@ -130,7 +128,6 @@ class LogExportIntegrationTest {
         userRepository.save(managerUser);
         managerToken = login("manager@test.local", "manager123");
 
-        // Worker
         workerUser = User.builder()
                 .name("Worker Bob")
                 .email("worker@test.local")
@@ -249,234 +246,305 @@ class LogExportIntegrationTest {
     }
 
     @Test
-    @DisplayName("7. Excel contains Job Logs sheet with 8 headers and frozen top row")
-    void excelContainsJobLogsSheetWithCorrectHeaders() throws IOException {
+    @DisplayName("7. Dynamic headers: fixed columns + active process steps + final fixed columns")
+    void excelContainsDynamicHeaders() throws IOException {
+        // Create 4 active process steps in a specific order
+        createProcessStep("Laser Cutting", 1, true);
+        createProcessStep("Bending", 2, true);
+        createProcessStep("Hardware Packaging", 3, true);
+        createProcessStep("Dispatch", 4, true);
+
         try (Workbook wb = downloadAndParseWorkbook("/admin/logs/export", adminToken)) {
             Sheet sheet = wb.getSheet("Job Logs");
             assertThat(sheet).isNotNull();
-
-            // Check freeze pane
             assertThat(sheet.getPaneInformation()).isNotNull();
             assertThat(sheet.getPaneInformation().isFreezePane()).isTrue();
 
-            // Check headers
             Row headerRow = sheet.getRow(0);
             assertThat(headerRow).isNotNull();
-            assertThat(headerRow.getCell(0).getStringCellValue()).isEqualTo("Job Number");
-            assertThat(headerRow.getCell(1).getStringCellValue()).isEqualTo("Company Name");
-            assertThat(headerRow.getCell(2).getStringCellValue()).isEqualTo("Job Status");
-            assertThat(headerRow.getCell(3).getStringCellValue()).isEqualTo("Chalan Number");
-            assertThat(headerRow.getCell(4).getStringCellValue()).isEqualTo("Step Name");
-            assertThat(headerRow.getCell(5).getStringCellValue()).isEqualTo("Action");
-            assertThat(headerRow.getCell(6).getStringCellValue()).isEqualTo("Performed By");
-            assertThat(headerRow.getCell(7).getStringCellValue()).isEqualTo("Timestamp");
+
+            // 11 fixed + 4 process steps + 2 final = 17 total
+            String[] expectedHeaders = {
+                    "FR",
+                    "CUSTOMER NAME",
+                    "DELIVERY ADDRESS",
+                    "PO NO.",
+                    "GST No.",
+                    "PO DATE",
+                    "ORDER DATE",
+                    "DELIVERY DATE",
+                    "DOOR'S",
+                    "DOOR LEAF",
+                    "COLOUR SHADE",
+                    "Laser Cutting",
+                    "Bending",
+                    "Hardware Packaging",
+                    "Dispatch",
+                    "CHALLAN NO.",
+                    "VEHICLE DETAILS"
+            };
+            for (int i = 0; i < expectedHeaders.length; i++) {
+                assertThat(headerRow.getCell(i).getStringCellValue()).isEqualTo(expectedHeaders[i]);
+            }
         }
     }
 
     @Test
-    @DisplayName("8. Export includes logs from multiple jobs")
-    void exportIncludesLogsFromMultipleJobs() throws IOException {
+    @DisplayName("8. Export includes multiple jobs with correct company name mapping")
+    void exportIncludesMultipleJobs() throws IOException {
+        createProcessStep("Step A", 1, true);
         Job job1 = createJob("JOB-101", "Acme Doors", JobStatus.IN_PROGRESS, null);
         Job job2 = createJob("JOB-102", "Zenith Ent", JobStatus.IN_PROGRESS, null);
-
-        JobStep step1 = createStep(job1, "Cutting", 1, JobStepStatus.COMPLETED);
-        JobStep step2 = createStep(job2, "Framing", 1, JobStepStatus.COMPLETED);
-
-        createHistory(job1, step1, JobStepAction.COMPLETED, workerUser);
-        createHistory(job2, step2, JobStepAction.COMPLETED, workerUser);
-
         try (Workbook wb = downloadAndParseWorkbook("/manager/logs/export", managerToken)) {
             Sheet sheet = wb.getSheet("Job Logs");
-            List<String> jobNumbers = new ArrayList<>();
-            for (int r = 1; r <= sheet.getLastRowNum(); r++) {
-                jobNumbers.add(sheet.getRow(r).getCell(0).getStringCellValue());
-            }
-            assertThat(jobNumbers).contains("JOB-101", "JOB-102");
+            assertThat(sheet.getLastRowNum()).isEqualTo(2);
+            List<String> companyNames = new ArrayList<>();
+            companyNames.add(sheet.getRow(1).getCell(1).getStringCellValue());
+            companyNames.add(sheet.getRow(2).getCell(1).getStringCellValue());
+            assertThat(companyNames).containsExactlyInAnyOrder("Acme Doors", "Zenith Ent");
         }
     }
 
     @Test
-    @DisplayName("9. Export includes normal step actions: COMPLETED, UNDONE, REOPENED")
-    void exportIncludesNormalStepActions() throws IOException {
-        Job job = createJob("JOB-STEPS", "Doors Inc", JobStatus.IN_PROGRESS, null);
-        JobStep step = createStep(job, "Painting", 1, JobStepStatus.PENDING);
+    @DisplayName("9. Completed step shows DD/MM/YYYY - Person Name; Pending step shows Pending")
+    void stageColumnsReflectStepStatus() throws IOException {
+        createProcessStep("Laser Cutting", 1, true);
+        createProcessStep("Bending", 2, true);
 
-        createHistory(job, step, JobStepAction.COMPLETED, workerUser);
-        createHistory(job, step, JobStepAction.UNDONE, workerUser);
-        createHistory(job, step, JobStepAction.REOPENED, managerUser);
+        Job job = createJob("JOB-STAGE", "Stage Co", JobStatus.IN_PROGRESS, null);
+        Instant completionTime = Instant.parse("2026-09-19T10:30:00Z");
+        JobStep laser = createStepWithCompletedBy(job, "Laser Cutting", 1, JobStepStatus.COMPLETED, completionTime, workerUser);
+        JobStep bend = createStep(job, "Bending", 2, JobStepStatus.PENDING);
 
         try (Workbook wb = downloadAndParseWorkbook("/admin/logs/export", adminToken)) {
             Sheet sheet = wb.getSheet("Job Logs");
-            List<String> actions = new ArrayList<>();
-            for (int r = 1; r <= sheet.getLastRowNum(); r++) {
-                actions.add(sheet.getRow(r).getCell(5).getStringCellValue());
-                assertThat(sheet.getRow(r).getCell(4).getStringCellValue()).isEqualTo("Painting");
-            }
-            assertThat(actions).contains("COMPLETED", "UNDONE", "REOPENED");
+            Row dataRow = sheet.getRow(1);
+            // Laser Cutting is col 11 (11 fixed columns + 0th process step)
+            String laserCell = dataRow.getCell(11).getStringCellValue();
+            String expectedDate = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+                    .format(completionTime.atZone(ZoneId.of("Asia/Kolkata")));
+            assertThat(laserCell).isEqualTo(expectedDate + " - Worker Bob");
+
+            // Bending is col 12
+            assertThat(dataRow.getCell(12).getStringCellValue()).isEqualTo("Pending");
         }
     }
 
     @Test
-    @DisplayName("10. Export includes CHALAN_ADDED with blank Step Name")
-    void exportIncludesChalanAdded() throws IOException {
-        Job job = createJob("JOB-CHALAN", "Build Corp", JobStatus.WORK_DONE, "CH-9999");
-        createHistory(job, null, JobStepAction.CHALAN_ADDED, workerUser);
+    @DisplayName("10. Completed then undone step shows Pending")
+    void completedThenUndoneShowsPending() throws IOException {
+        createProcessStep("Bending", 1, true);
 
-        try (Workbook wb = downloadAndParseWorkbook("/manager/logs/export", managerToken)) {
-            Sheet sheet = wb.getSheet("Job Logs");
-            Row row = sheet.getRow(1);
-            assertThat(row.getCell(0).getStringCellValue()).isEqualTo("JOB-CHALAN");
-            assertThat(row.getCell(3).getStringCellValue()).isEqualTo("CH-9999");
-            assertThat(row.getCell(4).getStringCellValue()).isEmpty(); // Blank Step Name
-            assertThat(row.getCell(5).getStringCellValue()).isEqualTo("CHALAN_ADDED");
-            assertThat(row.getCell(6).getStringCellValue()).isEqualTo("Worker Bob");
-        }
-    }
-
-    @Test
-    @DisplayName("11. Export includes JOB_COMPLETED with blank Step Name")
-    void exportIncludesJobCompleted() throws IOException {
-        Job job = createJob("JOB-DONE", "Build Corp", JobStatus.JOB_COMPLETED, "CH-8888");
-        createHistory(job, null, JobStepAction.JOB_COMPLETED, workerUser);
+        Job job = createJob("JOB-UNDO", "Undo Co", JobStatus.IN_PROGRESS, null);
+        // Step was completed then undone -> current status is PENDING
+        JobStep bend = createStep(job, "Bending", 1, JobStepStatus.PENDING);
+        createHistory(job, bend, JobStepAction.COMPLETED, workerUser);
+        createHistory(job, bend, JobStepAction.UNDONE, workerUser);
 
         try (Workbook wb = downloadAndParseWorkbook("/admin/logs/export", adminToken)) {
             Sheet sheet = wb.getSheet("Job Logs");
-            Row row = sheet.getRow(1);
-            assertThat(row.getCell(0).getStringCellValue()).isEqualTo("JOB-DONE");
-            assertThat(row.getCell(2).getStringCellValue()).isEqualTo("JOB_COMPLETED");
-            assertThat(row.getCell(3).getStringCellValue()).isEqualTo("CH-8888");
-            assertThat(row.getCell(4).getStringCellValue()).isEmpty(); // Blank Step Name
-            assertThat(row.getCell(5).getStringCellValue()).isEqualTo("JOB_COMPLETED");
-            assertThat(row.getCell(6).getStringCellValue()).isEqualTo("Worker Bob");
+            Row dataRow = sheet.getRow(1);
+            // Bending is col 11 (11 fixed + 0th process step)
+            assertThat(dataRow.getCell(11).getStringCellValue()).isEqualTo("Pending");
         }
     }
 
     @Test
-    @DisplayName("12. Job-level events correctly have blank Step Name")
-    void jobLevelEventsHaveBlankStepName() throws IOException {
-        Job job = createJob("JOB-BLANK-STEP", "Wood Co", JobStatus.JOB_COMPLETED, "CH-123");
-        createHistory(job, null, JobStepAction.CHALAN_ADDED, workerUser);
-        createHistory(job, null, JobStepAction.JOB_COMPLETED, workerUser);
+    @DisplayName("11. Completed -> undone -> completed again shows latest completion")
+    void completedUndoneCompletedShowsLatest() throws IOException {
+        createProcessStep("Bending", 1, true);
 
-        try (Workbook wb = downloadAndParseWorkbook("/manager/logs/export", managerToken)) {
-            Sheet sheet = wb.getSheet("Job Logs");
-            for (int r = 1; r <= sheet.getLastRowNum(); r++) {
-                Row row = sheet.getRow(r);
-                String action = row.getCell(5).getStringCellValue();
-                if ("CHALAN_ADDED".equals(action) || "JOB_COMPLETED".equals(action)) {
-                    assertThat(row.getCell(4).getStringCellValue()).isBlank();
-                }
-            }
-        }
-    }
-
-    @Test
-    @DisplayName("13. Chalan number appears as text in the export")
-    void chalanNumberAppearsInExport() throws IOException {
-        Job job = createJob("JOB-TEXT-CH", "Glass & Wood", JobStatus.WORK_DONE, "CH-TEXT-456");
-        createHistory(job, null, JobStepAction.CHALAN_ADDED, workerUser);
+        Job job = createJob("JOB-REDO", "Redo Co", JobStatus.IN_PROGRESS, null);
+        Instant latestCompletion = Instant.parse("2026-09-21T14:00:00Z");
+        JobStep bend = createStepWithCompletedBy(job, "Bending", 1, JobStepStatus.COMPLETED, latestCompletion, workerUser);
+        createHistory(job, bend, JobStepAction.COMPLETED, workerUser);
+        createHistory(job, bend, JobStepAction.UNDONE, workerUser);
+        createHistory(job, bend, JobStepAction.COMPLETED, workerUser);
 
         try (Workbook wb = downloadAndParseWorkbook("/admin/logs/export", adminToken)) {
             Sheet sheet = wb.getSheet("Job Logs");
-            Row row = sheet.getRow(1);
-            Cell chalanCell = row.getCell(3);
-            assertThat(chalanCell.getCellType()).isEqualTo(CellType.STRING);
-            assertThat(chalanCell.getStringCellValue()).isEqualTo("CH-TEXT-456");
+            Row dataRow = sheet.getRow(1);
+            String expectedDate = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+                    .format(latestCompletion.atZone(ZoneId.of("Asia/Kolkata")));
+            assertThat(dataRow.getCell(11).getStringCellValue()).isEqualTo(expectedDate + " - Worker Bob");
         }
     }
 
     @Test
-    @DisplayName("14. Cancelled jobs are included in the export")
-    void cancelledJobsAreIncluded() throws IOException {
-        Job job = createJob("JOB-CANCELLED", "Fail Safe Co", JobStatus.CANCELLED, null);
-        JobStep step = createStep(job, "Initial Cut", 1, JobStepStatus.COMPLETED);
-        createHistory(job, step, JobStepAction.COMPLETED, workerUser);
+    @DisplayName("12. New process step added after job creation shows Pending for that job")
+    void newProcessStepShowsPendingForOlderJob() throws IOException {
+        createProcessStep("Laser Cutting", 1, true);
 
-        try (Workbook wb = downloadAndParseWorkbook("/manager/logs/export", managerToken)) {
-            Sheet sheet = wb.getSheet("Job Logs");
-            Row row = sheet.getRow(1);
-            assertThat(row.getCell(0).getStringCellValue()).isEqualTo("JOB-CANCELLED");
-            assertThat(row.getCell(2).getStringCellValue()).isEqualTo("CANCELLED");
-        }
-    }
+        // Job created when only Laser Cutting existed
+        Job job = createJob("JOB-OLD", "Old Co", JobStatus.IN_PROGRESS, null);
+        createStep(job, "Laser Cutting", 1, JobStepStatus.PENDING);
 
-    @Test
-    @DisplayName("15. Reopened job history is included in the export")
-    void reopenedJobHistoryIsIncluded() throws IOException {
-        Job job = createJob("JOB-REOPEN-HIST", "Precision Doors", JobStatus.IN_PROGRESS, null);
-        JobStep step = createStep(job, "Final Polish", 3, JobStepStatus.PENDING);
-        createHistory(job, step, JobStepAction.REOPENED, managerUser);
+        // Admin adds a new process step later
+        createProcessStep("Quality Check", 2, true);
 
         try (Workbook wb = downloadAndParseWorkbook("/admin/logs/export", adminToken)) {
             Sheet sheet = wb.getSheet("Job Logs");
-            Row row = sheet.getRow(1);
-            assertThat(row.getCell(0).getStringCellValue()).isEqualTo("JOB-REOPEN-HIST");
-            assertThat(row.getCell(4).getStringCellValue()).isEqualTo("Final Polish");
-            assertThat(row.getCell(5).getStringCellValue()).isEqualTo("REOPENED");
-            assertThat(row.getCell(6).getStringCellValue()).isEqualTo("Manager Alice");
+            Row headerRow = sheet.getRow(0);
+            // Headers should be: ...fixed..., Laser Cutting, Quality Check, CHALLAN NO., VEHICLE DETAILS
+            assertThat(headerRow.getCell(11).getStringCellValue()).isEqualTo("Laser Cutting");
+            assertThat(headerRow.getCell(12).getStringCellValue()).isEqualTo("Quality Check");
+            assertThat(headerRow.getCell(13).getStringCellValue()).isEqualTo("CHALLAN NO.");
+
+            Row dataRow = sheet.getRow(1);
+            // Job has no JobStep for Quality Check -> Pending
+            assertThat(dataRow.getCell(12).getStringCellValue()).isEqualTo("Pending");
         }
     }
 
     @Test
-    @DisplayName("16. Ordering is deterministic newest-first")
-    void orderingIsDeterministicNewestFirst() throws IOException {
-        // Ensure test isolation: clear any pre‑existing JobStepHistory rows that could affect ordering
-        jobStepHistoryRepository.deleteAll();
-        Job job = createJob("JOB-ORDER", "Fast Doors", JobStatus.IN_PROGRESS, null);
-        JobStep step1 = createStep(job, "Step 1", 1, JobStepStatus.COMPLETED);
-        JobStep step2 = createStep(job, "Step 2", 2, JobStepStatus.COMPLETED);
+    @DisplayName("13. Inactive process steps do not appear as Excel columns")
+    void inactiveProcessStepsExcluded() throws IOException {
+        createProcessStep("Laser Cutting", 1, true);
+        createProcessStep("Obsolete Step", 2, false);  // inactive
+        createProcessStep("Dispatch", 3, true);
 
-        Instant now = Instant.now();
-        // Older log
-        JobStepHistory older = JobStepHistory.builder()
-                .job(job)
-                .jobStep(step1)
-                .action(JobStepAction.COMPLETED)
-                .performedBy(workerUser)
-                .createdAt(now.minus(1, ChronoUnit.HOURS))
+        try (Workbook wb = downloadAndParseWorkbook("/admin/logs/export", adminToken)) {
+            Sheet sheet = wb.getSheet("Job Logs");
+            Row headerRow = sheet.getRow(0);
+            // col 11 = Laser Cutting, col 12 = Dispatch (skipping inactive), col 13 = CHALLAN NO.
+            assertThat(headerRow.getCell(11).getStringCellValue()).isEqualTo("Laser Cutting");
+            assertThat(headerRow.getCell(12).getStringCellValue()).isEqualTo("Dispatch");
+            assertThat(headerRow.getCell(13).getStringCellValue()).isEqualTo("CHALLAN NO.");
+        }
+    }
+
+    @Test
+    @DisplayName("14. Process step order change is reflected in Excel column order")
+    void processStepOrderReflectedInExcel() throws IOException {
+        // Dispatch first, then Laser Cutting (reversed order)
+        createProcessStep("Dispatch", 1, true);
+        createProcessStep("Laser Cutting", 2, true);
+
+        try (Workbook wb = downloadAndParseWorkbook("/admin/logs/export", adminToken)) {
+            Sheet sheet = wb.getSheet("Job Logs");
+            Row headerRow = sheet.getRow(0);
+            assertThat(headerRow.getCell(11).getStringCellValue()).isEqualTo("Dispatch");
+            assertThat(headerRow.getCell(12).getStringCellValue()).isEqualTo("Laser Cutting");
+        }
+    }
+
+    @Test
+    @DisplayName("15. Job with null optional fields does not crash export")
+    void nullJobFieldsHandled() throws IOException {
+        createProcessStep("Step A", 1, true);
+        // Create job with minimal fields, all optional fields null
+        Job job = Job.builder()
+                .jobNumber("JOB-NULL")
+                .companyName("Null Co")
+                .status(JobStatus.IN_PROGRESS)
+                .createdBy(managerUser)
                 .build();
-        older = jobStepHistoryRepository.save(older);
+        jobRepository.save(job);
 
-        // Newer log
-        JobStepHistory newer = JobStepHistory.builder()
-                .job(job)
-                .jobStep(step2)
-                .action(JobStepAction.COMPLETED)
-                .performedBy(workerUser)
-                .createdAt(now)
-                .build();
-        newer = jobStepHistoryRepository.save(newer);
-
-        // @CreationTimestamp owns the insert-time value, so set known database
-        // timestamps after persistence to exercise the export ordering contract.
-        jdbcTemplate.update(
-                "UPDATE job_step_history SET created_at = ? WHERE id = ?",
-                now.minus(1, ChronoUnit.HOURS),
-                older.getId()
-        );
-        jdbcTemplate.update(
-                "UPDATE job_step_history SET created_at = ? WHERE id = ?",
-                now,
-                newer.getId()
-        );
-
-        try (Workbook wb = downloadAndParseWorkbook("/manager/logs/export", managerToken)) {
+        try (Workbook wb = downloadAndParseWorkbook("/admin/logs/export", adminToken)) {
             Sheet sheet = wb.getSheet("Job Logs");
-            // Collect rows for this job number
-            List<Row> jobRows = new ArrayList<>();
-            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
-                Row row = sheet.getRow(i);
-                if (row == null) continue;
-                Cell jobNumberCell = row.getCell(0);
-                if (jobNumberCell != null && "JOB-ORDER".equals(jobNumberCell.getStringCellValue())) {
-                    jobRows.add(row);
-                }
-            }
-            assertThat(jobRows).hasSize(2);
-            // Newer log should appear first
-            assertThat(jobRows.get(0).getCell(4).getStringCellValue()).isEqualTo("Step 2");
-            assertThat(jobRows.get(1).getCell(4).getStringCellValue()).isEqualTo("Step 1");
+            Row dataRow = sheet.getRow(1);
+            assertThat(dataRow).isNotNull();
+            // FR should be empty, CUSTOMER NAME should be "Null Co"
+            assertThat(dataRow.getCell(0).getStringCellValue()).isEmpty();
+            assertThat(dataRow.getCell(1).getStringCellValue()).isEqualTo("Null Co");
         }
+    }
+
+    @Test
+    @DisplayName("16. Date fields use DD/MM/YYYY format")
+    void dateFieldsUseCorrectFormat() throws IOException {
+        createProcessStep("Step A", 1, true);
+        Job job = Job.builder()
+                .jobNumber("JOB-DATE")
+                .companyName("Date Co")
+                .status(JobStatus.IN_PROGRESS)
+                .createdBy(managerUser)
+                .poDate(LocalDate.of(2026, 9, 1))
+                .orderDate(LocalDate.of(2026, 9, 3))
+                .deliveryDate(LocalDate.of(2026, 9, 20))
+                .build();
+        jobRepository.save(job);
+
+        try (Workbook wb = downloadAndParseWorkbook("/admin/logs/export", adminToken)) {
+            Sheet sheet = wb.getSheet("Job Logs");
+            Row dataRow = sheet.getRow(1);
+            assertThat(dataRow.getCell(5).getStringCellValue()).isEqualTo("01/09/2026");
+            assertThat(dataRow.getCell(6).getStringCellValue()).isEqualTo("03/09/2026");
+            assertThat(dataRow.getCell(7).getStringCellValue()).isEqualTo("20/09/2026");
+        }
+    }
+
+    @Test
+    @DisplayName("17. Job fields map to correct fixed columns")
+    void jobFieldsMappedCorrectly() throws IOException {
+        createProcessStep("Step A", 1, true);
+        Job job = Job.builder()
+                .jobNumber("JOB-MAP")
+                .companyName("Map Corp")
+                .status(JobStatus.IN_PROGRESS)
+                .createdBy(managerUser)
+                .fr("FR-100")
+                .deliveryAddress("Pune")
+                .poNo("PO-999")
+                .gstNo("GST-ABC")
+                .poDate(LocalDate.of(2026, 1, 15))
+                .orderDate(LocalDate.of(2026, 1, 20))
+                .deliveryDate(LocalDate.of(2026, 2, 10))
+                .doors("10")
+                .doorLeaf("20")
+                .colourShade("Grey")
+                .chalanNumber("CH-102")
+                .vehicleDetails("MH12AB1234")
+                .build();
+        jobRepository.save(job);
+
+        try (Workbook wb = downloadAndParseWorkbook("/admin/logs/export", adminToken)) {
+            Sheet sheet = wb.getSheet("Job Logs");
+            Row dataRow = sheet.getRow(1);
+            assertThat(dataRow.getCell(0).getStringCellValue()).isEqualTo("FR-100");
+            assertThat(dataRow.getCell(1).getStringCellValue()).isEqualTo("Map Corp");
+            assertThat(dataRow.getCell(2).getStringCellValue()).isEqualTo("Pune");
+            assertThat(dataRow.getCell(3).getStringCellValue()).isEqualTo("PO-999");
+            assertThat(dataRow.getCell(4).getStringCellValue()).isEqualTo("GST-ABC");
+            assertThat(dataRow.getCell(5).getStringCellValue()).isEqualTo("15/01/2026");
+            assertThat(dataRow.getCell(6).getStringCellValue()).isEqualTo("20/01/2026");
+            assertThat(dataRow.getCell(7).getStringCellValue()).isEqualTo("10/02/2026");
+            assertThat(dataRow.getCell(8).getStringCellValue()).isEqualTo("10");
+            assertThat(dataRow.getCell(9).getStringCellValue()).isEqualTo("20");
+            assertThat(dataRow.getCell(10).getStringCellValue()).isEqualTo("Grey");
+            // col 11 = Step A (Pending)
+            assertThat(dataRow.getCell(11).getStringCellValue()).isEqualTo("Pending");
+            // col 12 = CHALLAN NO.
+            assertThat(dataRow.getCell(12).getStringCellValue()).isEqualTo("CH-102");
+            // col 13 = VEHICLE DETAILS
+            assertThat(dataRow.getCell(13).getStringCellValue()).isEqualTo("MH12AB1234");
+        }
+    }
+
+    @Test
+    @DisplayName("18. Zero active process steps produces only fixed + final columns")
+    void zeroProcessStepsProducesFixedColumnsOnly() throws IOException {
+        // No process steps at all
+        Job job = createJob("JOB-ZERO", "Zero Co", JobStatus.IN_PROGRESS, null);
+
+        try (Workbook wb = downloadAndParseWorkbook("/admin/logs/export", adminToken)) {
+            Sheet sheet = wb.getSheet("Job Logs");
+            Row headerRow = sheet.getRow(0);
+            // 11 fixed + 0 process steps + 2 final = 13 total
+            assertThat(headerRow.getCell(11).getStringCellValue()).isEqualTo("CHALLAN NO.");
+            assertThat(headerRow.getCell(12).getStringCellValue()).isEqualTo("VEHICLE DETAILS");
+        }
+    }
+
+    // Helper methods
+    private ProcessStep createProcessStep(String name, int order, boolean active) {
+        ProcessStep ps = ProcessStep.builder()
+                .name(name)
+                .stepOrder(order)
+                .isActive(active)
+                .build();
+        return processStepRepository.save(ps);
     }
 
     private Job createJob(String jobNumber, String companyName, JobStatus status, String chalan) {
@@ -491,11 +559,26 @@ class LogExportIntegrationTest {
     }
 
     private JobStep createStep(Job job, String name, int order, JobStepStatus status) {
+        JobStep.JobStepBuilder builder = JobStep.builder()
+                .job(job)
+                .stepName(name)
+                .stepOrder(order)
+                .status(status);
+        if (status == JobStepStatus.COMPLETED) {
+            builder.completedAt(Instant.now());
+        }
+        JobStep step = builder.build();
+        return jobStepRepository.save(step);
+    }
+
+    private JobStep createStepWithCompletedBy(Job job, String name, int order, JobStepStatus status, Instant completedAt, User completedBy) {
         JobStep step = JobStep.builder()
                 .job(job)
                 .stepName(name)
                 .stepOrder(order)
                 .status(status)
+                .completedAt(completedAt)
+                .completedBy(completedBy)
                 .build();
         return jobStepRepository.save(step);
     }
@@ -508,74 +591,5 @@ class LogExportIntegrationTest {
                 .performedBy(performer)
                 .build();
         return jobStepHistoryRepository.save(h);
-    }
-
-    @Test
-    @DisplayName("GET /api/admin/logs - Admin retrieves logs successfully ordered newest first")
-    void adminCanGetLogsOrderedNewestFirst() {
-        Job job = createJob("JOB-ADM-1", "Admin Corp", JobStatus.IN_PROGRESS, null);
-        JobStep step1 = createStep(job, "Cutting", 1, JobStepStatus.COMPLETED);
-        JobStep step2 = createStep(job, "Welding", 2, JobStepStatus.PENDING);
-
-        JobStepHistory h1 = createHistory(job, step1, JobStepAction.COMPLETED, workerUser);
-        JobStepHistory h2 = createHistory(job, step2, JobStepAction.UNDONE, workerUser);
-
-        jdbcTemplate.update("UPDATE job_step_history SET created_at = ? WHERE id = ?",
-                Instant.now().minus(10, ChronoUnit.MINUTES), h1.getId());
-        jdbcTemplate.update("UPDATE job_step_history SET created_at = ? WHERE id = ?",
-                Instant.now(), h2.getId());
-
-        ResponseEntity<List> response = restTemplate.exchange(
-                baseUrl() + "/admin/logs",
-                HttpMethod.GET,
-                new HttpEntity<>(authHeaders(adminToken)),
-                List.class
-        );
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        List<Map<String, Object>> logs = response.getBody();
-        assertThat(logs).hasSize(2);
-        // Newest first: h2 (action UNDONE) then h1 (action COMPLETED)
-        assertThat(logs.get(0).get("action")).isEqualTo("UNDONE");
-        assertThat(logs.get(0).get("stepName")).isEqualTo("Welding");
-        assertThat(logs.get(0).get("performedBy")).isEqualTo("Worker Bob");
-        assertThat(logs.get(1).get("action")).isEqualTo("COMPLETED");
-        assertThat(logs.get(1).get("stepName")).isEqualTo("Cutting");
-    }
-
-    @Test
-    @DisplayName("GET /api/admin/logs - Unauthenticated request returns 401")
-    void unauthenticatedAdminLogsReturns401() {
-        ResponseEntity<Map> response = restTemplate.exchange(
-                baseUrl() + "/admin/logs",
-                HttpMethod.GET,
-                null,
-                Map.class
-        );
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-    }
-
-    @Test
-    @DisplayName("GET /api/admin/logs - Worker request returns 403")
-    void workerAdminLogsReturns403() {
-        ResponseEntity<Map> response = restTemplate.exchange(
-                baseUrl() + "/admin/logs",
-                HttpMethod.GET,
-                new HttpEntity<>(authHeaders(workerToken)),
-                Map.class
-        );
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-    }
-
-    @Test
-    @DisplayName("GET /api/admin/logs - Manager request returns 403")
-    void managerAdminLogsReturns403() {
-        ResponseEntity<Map> response = restTemplate.exchange(
-                baseUrl() + "/admin/logs",
-                HttpMethod.GET,
-                new HttpEntity<>(authHeaders(managerToken)),
-                Map.class
-        );
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     }
 }

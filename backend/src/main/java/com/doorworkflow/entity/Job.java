@@ -47,4 +47,37 @@ public class Job {
 
     @Column(name = "chalan_number", length = 100)
     private String chalanNumber;
+
+    @Column(name = "fr")
+    private String fr;
+
+    @Column(name = "delivery_address")
+    private String deliveryAddress;
+
+    @Column(name = "po_no")
+    private String poNo;
+
+    @Column(name = "gst_no")
+    private String gstNo;
+
+    @Column(name = "po_date")
+    private java.time.LocalDate poDate;
+
+    @Column(name = "order_date")
+    private java.time.LocalDate orderDate;
+
+    @Column(name = "delivery_date")
+    private java.time.LocalDate deliveryDate;
+
+    @Column(name = "doors")
+    private String doors;
+
+    @Column(name = "door_leaf")
+    private String doorLeaf;
+
+    @Column(name = "colour_shade")
+    private String colourShade;
+
+    @Column(name = "vehicle_details")
+    private String vehicleDetails;
 }

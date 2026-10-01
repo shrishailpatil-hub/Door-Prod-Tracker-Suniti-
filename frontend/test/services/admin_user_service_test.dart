@@ -116,4 +116,28 @@ void main() {
       );
     });
   });
+
+  group('AdminUserService.resetPassword', () {
+    late MockApiClient mockApiClient;
+    late AdminUserService service;
+
+    setUp(() {
+      mockApiClient = MockApiClient();
+      service = AdminUserService(apiClient: mockApiClient);
+    });
+
+    test('sends PATCH with correct endpoint and new password body', () async {
+      const userId = 'user-456';
+      const newPassword = 'newSecretPassword!';
+
+      when(() => mockApiClient.patch('${ApiConfig.adminUsersEndpoint}/$userId/reset-password', body: any(named: 'body')))
+          .thenAnswer((_) async => {});
+
+      await service.resetPassword(id: userId, newPassword: newPassword);
+
+      final captured = verify(() => mockApiClient.patch('${ApiConfig.adminUsersEndpoint}/$userId/reset-password', body: captureAny(named: 'body'))).captured;
+      expect(captured.length, 1);
+      expect(captured.first, {'password': newPassword});
+    });
+  });
 }

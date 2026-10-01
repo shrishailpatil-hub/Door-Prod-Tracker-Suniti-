@@ -20,6 +20,7 @@ class ApiConfig {
 
   // Manager
   static const String managerJobsEndpoint = '/manager/jobs';
+  static const String fcmTokenEndpoint = '/fcm/token';
   static const String managerLogsEndpoint = '/manager/jobs/logs';
   static const String managerLogsExportEndpoint = '/manager/logs/export';
 

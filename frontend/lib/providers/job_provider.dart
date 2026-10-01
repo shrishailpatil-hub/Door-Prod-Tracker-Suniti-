@@ -69,10 +69,27 @@ class JobProvider extends ChangeNotifier {
   bool get isCreatingManagerJob => _isCreatingManagerJob;
   String? get managerCreateErrorMessage => _managerCreateErrorMessage;
 
+  void clearManagerCreateError() {
+    _managerCreateErrorMessage = null;
+    notifyListeners();
+  }
+
+
   /// Creates a manager job and refreshes the backend-backed manager job list.
   Future<Job?> createManagerJob({
     required String jobNumber,
     required String companyName,
+    String? fr,
+    String? deliveryAddress,
+    String? poNo,
+    String? gstNo,
+    DateTime? poDate,
+    DateTime? orderDate,
+    DateTime? deliveryDate,
+    String? doors,
+    String? doorLeaf,
+    String? colourShade,
+    String? vehicleDetails,
   }) async {
     if (_isCreatingManagerJob) {
       return null;
@@ -85,6 +102,17 @@ class JobProvider extends ChangeNotifier {
       final createdJob = await _jobService.createManagerJob(
         jobNumber: jobNumber,
         companyName: companyName,
+        fr: fr,
+        deliveryAddress: deliveryAddress,
+        poNo: poNo,
+        gstNo: gstNo,
+        poDate: poDate,
+        orderDate: orderDate,
+        deliveryDate: deliveryDate,
+        doors: doors,
+        doorLeaf: doorLeaf,
+        colourShade: colourShade,
+        vehicleDetails: vehicleDetails,
       );
       await fetchManagerJobs();
       return createdJob;

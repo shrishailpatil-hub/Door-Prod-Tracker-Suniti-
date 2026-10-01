@@ -162,7 +162,7 @@ class FullWorkflowRuntimeVerificationTest {
         // 3. MANAGER: LOGIN & CREATE JOB
         // ==========================================
         String managerToken = login("alice@door.local", "mgrpass123");
-        var createJobReq = new CreateJobRequest("JOB-E2E-101", "Acme Door Corp");
+        var createJobReq = new CreateJobRequest("JOB-E2E-101", "Acme Door Corp", null, null, null, null, null, null, null, null, null, null, null);
         ResponseEntity<JobResponse> jobResp = restTemplate.exchange(
                 baseUrl() + "/manager/jobs",
                 HttpMethod.POST,

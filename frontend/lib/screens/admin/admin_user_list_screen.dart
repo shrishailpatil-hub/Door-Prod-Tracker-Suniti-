@@ -264,6 +264,20 @@ class _UserCard extends StatelessWidget {
                                 );
                               },
                             ),
+                            // Reset Password button
+                            IconButton(
+                              constraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+                              padding: const EdgeInsets.all(AppTheme.space4),
+                              style: IconButton.styleFrom(
+                                backgroundColor: AppTheme.surfaceLight,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
+                                ),
+                              ),
+                              icon: const Icon(Icons.lock_reset, size: 20, color: AppTheme.textPrimary),
+                              tooltip: 'Reset password',
+                              onPressed: () => _showResetPasswordDialog(context, user),
+                            ),
                           ],
                         ),
                       ],
@@ -352,5 +366,113 @@ class _UserCard extends StatelessWidget {
       case UserRole.worker:
         return Icons.engineering_outlined;
     }
+  }
+
+  void _showResetPasswordDialog(BuildContext context, AppUser user) {
+    final passwordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            bool isSubmitting = false;
+
+            return AlertDialog(
+              title: Text('Reset Password for ${user.name}'),
+              content: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: passwordController,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: 'New Password',
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Password is required';
+                        }
+                        if (value.length < 8) {
+                          return 'Password must be at least 8 characters';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: confirmPasswordController,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Confirm New Password',
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Confirm password is required';
+                        }
+                        if (value != passwordController.text) {
+                          return 'Passwords do not match';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isSubmitting ? null : () => Navigator.of(ctx).pop(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: isSubmitting
+                      ? null
+                      : () async {
+                          if (formKey.currentState?.validate() ?? false) {
+                            setState(() => isSubmitting = true);
+                            final provider = context.read<AdminUserProvider>();
+                            final success = await provider.resetPassword(
+                              id: user.id,
+                              newPassword: passwordController.text,
+                            );
+                            if (!context.mounted) return;
+                            if (success) {
+                              Navigator.of(ctx).pop();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Password reset successfully for ${user.name}'),
+                                  backgroundColor: AppTheme.statusCompleted,
+                                ),
+                              );
+                            } else {
+                              setState(() => isSubmitting = false);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(provider.updateErrorMessage ?? 'Failed to reset password'),
+                                  backgroundColor: AppTheme.statusCancelled,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                  child: isSubmitting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Reset Password'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 }

@@ -16,6 +16,17 @@ public record JobResponse(
         Instant updatedAt,
         Instant completedAt,
         String chalanNumber,
+        String fr,
+        String deliveryAddress,
+        String poNo,
+        String gstNo,
+        java.time.LocalDate poDate,
+        java.time.LocalDate orderDate,
+        java.time.LocalDate deliveryDate,
+        String doors,
+        String doorLeaf,
+        String colourShade,
+        String vehicleDetails,
         List<JobStepResponse> steps
 ) {
 }
