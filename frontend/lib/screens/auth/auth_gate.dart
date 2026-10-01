@@ -16,22 +16,15 @@ class AuthGate extends StatelessWidget {
     final auth = context.watch<AuthProvider>();
 
     if (!auth.isInitialized) {
-      return const AppScaffold(
+      return Scaffold(
+        backgroundColor: const Color(0xFF006BB0), // Official Suniti blue
         body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: AppTheme.space16),
-              Text(
-                'Loading Application...',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: AppTheme.textSecondary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 48.0),
+            child: Image.asset(
+              'assets/branding/suniti_logo.png',
+              fit: BoxFit.contain,
+            ),
           ),
         ),
       );

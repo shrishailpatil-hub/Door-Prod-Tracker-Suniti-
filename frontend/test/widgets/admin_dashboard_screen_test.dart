@@ -163,7 +163,7 @@ void main() {
     await tester.pumpAndSettle();
 
     verify(() => authProvider.logout()).called(1);
-    expect(find.text('Door Process Workflow'), findsOneWidget);
+    expect(find.text('Sign in to manage and track factory work.'), findsOneWidget);
   });
 
   testWidgets('uses one column on a phone-sized display without overflow', (

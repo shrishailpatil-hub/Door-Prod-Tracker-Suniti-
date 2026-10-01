@@ -52,7 +52,7 @@ void main() {
 
     await tester.pumpWidget(buildLogin(authProvider));
 
-    expect(find.text('Door Process Workflow'), findsOneWidget);
+    expect(find.text('Sign in to manage and track factory work.'), findsOneWidget);
     expect(find.byType(TextFormField), findsNWidgets(2));
     expect(find.text('Sign in'), findsOneWidget);
   });

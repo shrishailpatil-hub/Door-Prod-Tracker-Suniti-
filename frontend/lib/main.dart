@@ -58,7 +58,7 @@ class DoorProcessApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Door Process Workflow',
+      title: 'Suniti Flow',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       onGenerateRoute: AppRouter.onGenerateRoute,

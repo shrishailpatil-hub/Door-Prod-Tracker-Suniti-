@@ -152,10 +152,23 @@ class LogExportIntegrationTest {
     }
 
     @Test
-    @DisplayName("1. ADMIN can download Excel log export")
+    @DisplayName("1. ADMIN can download Excel log export via admin endpoint")
     void adminCanDownloadExcel() {
         ResponseEntity<byte[]> response = restTemplate.exchange(
                 baseUrl() + "/admin/logs/export",
+                HttpMethod.GET,
+                new HttpEntity<>(authHeaders(adminToken)),
+                byte[].class
+        );
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotEmpty();
+    }
+
+    @Test
+    @DisplayName("1b. ADMIN can download Excel log export via manager endpoint")
+    void adminCanDownloadExcelViaManagerEndpoint() {
+        ResponseEntity<byte[]> response = restTemplate.exchange(
+                baseUrl() + "/manager/logs/export",
                 HttpMethod.GET,
                 new HttpEntity<>(authHeaders(adminToken)),
                 byte[].class
@@ -591,5 +604,33 @@ class LogExportIntegrationTest {
                 .performedBy(performer)
                 .build();
         return jobStepHistoryRepository.save(h);
+    }
+
+    @Test
+    @DisplayName("Guard: ADMIN cannot access manager job endpoints (only log export is opened)")
+    void adminCannotAccessManagerJobEndpoints() {
+        // ADMIN should be blocked from creating jobs via manager endpoint
+        ResponseEntity<String> createJob = restTemplate.exchange(
+                baseUrl() + "/manager/jobs",
+                HttpMethod.POST,
+                new HttpEntity<>(Map.of(
+                        "companyName", "Test", "deliveryAddress", "Addr",
+                        "poNo", "PO1", "gstNo", "GST1",
+                        "poDate", "2026-01-01", "orderDate", "2026-01-01",
+                        "deliveryDate", "2026-02-01", "doors", 5,
+                        "doorLeaf", "Single", "colourShade", "Red"
+                ), authHeaders(adminToken)),
+                String.class
+        );
+        assertThat(createJob.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+
+        // ADMIN should be blocked from listing manager jobs
+        ResponseEntity<String> listJobs = restTemplate.exchange(
+                baseUrl() + "/manager/jobs",
+                HttpMethod.GET,
+                new HttpEntity<>(authHeaders(adminToken)),
+                String.class
+        );
+        assertThat(listJobs.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     }
 }

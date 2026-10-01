@@ -81,7 +81,7 @@ void main() {
 
         await tester.pumpWidget(buildApp(authProvider));
 
-        expect(find.text('Loading Application...'), findsOneWidget);
+        expect(find.byType(Image), findsOneWidget);
         verifyNever(() => mockJobProvider.fetchActiveJobs());
       },
     );
@@ -95,7 +95,7 @@ void main() {
         await tester.pumpWidget(buildApp(authProvider));
         await tester.pumpAndSettle();
 
-        expect(find.text('Door Process Workflow'), findsOneWidget);
+        expect(find.text('Sign in to manage and track factory work.'), findsOneWidget);
         expect(find.text('Sign in'), findsOneWidget);
         verifyNever(() => mockJobProvider.fetchActiveJobs());
       },

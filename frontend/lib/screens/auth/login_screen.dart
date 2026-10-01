@@ -84,18 +84,18 @@ class _LoginScreenState extends State<LoginScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
-                      Icons.door_sliding_outlined,
-                      size: 52,
-                      color: AppTheme.primaryBlue,
+                    Center(
+                      child: Container(
+                        constraints: const BoxConstraints(maxHeight: 140),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
+                          child: Image.asset(
+                            'assets/branding/suniti_logo.png',
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ),
                     ),
-                    const SizedBox(height: AppTheme.space16),
-                    Text(
-                      'Door Process Workflow',
-                      style: Theme.of(context).textTheme.headlineMedium,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: AppTheme.space8),
                     Text(
                       'Sign in to manage and track factory work.',
                       style: Theme.of(context).textTheme.bodyMedium,

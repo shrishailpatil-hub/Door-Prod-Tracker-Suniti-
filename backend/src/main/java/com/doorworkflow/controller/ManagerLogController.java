@@ -21,6 +21,7 @@ public class ManagerLogController {
     }
 
     @GetMapping("/export")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
     public ResponseEntity<byte[]> exportLogs() {
         byte[] excelBytes = logExportService.generateJobLogsExcel();
         return ResponseEntity.ok()
